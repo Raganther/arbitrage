@@ -1,0 +1,612 @@
+<title>Flip Check</title>
+<meta name="description" content="Decide whether a secondhand find is worth reselling — after eBay fees and postage.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    /* light — warm ledger paper, pine + copper */
+    --ground: #F4F1E8;
+    --surface: #FCFAF4;
+    --surface-2: #F0ECE0;
+    --ink: #1B231E;
+    --ink-muted: #5D655C;
+    --ink-faint: #8A9088;
+    --hair: #E2DBC9;
+    --hair-strong: #D2C9B2;
+    --accent: #0E6B4F;
+    --accent-ink: #0A5540;
+    --copper: #A9682F;
+    --good: #14764E;
+    --good-bg: #E4EFE5;
+    --warn: #9C6A10;
+    --warn-bg: #F3E9CF;
+    --bad: #A9433A;
+    --bad-bg: #F1E0DA;
+    --focus: #0E6B4F;
+    --shadow: 0 1px 2px rgba(27,35,30,.05), 0 8px 24px -14px rgba(27,35,30,.25);
+    color-scheme: light;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #12160F;
+      --surface: #1A1F16;
+      --surface-2: #232A1E;
+      --ink: #ECEADE;
+      --ink-muted: #A6AC9C;
+      --ink-faint: #767C6E;
+      --hair: #2C3327;
+      --hair-strong: #3A4233;
+      --accent: #43B489;
+      --accent-ink: #6ECBA6;
+      --copper: #D0965C;
+      --good: #4FB584;
+      --good-bg: #1C2C22;
+      --warn: #D2A44A;
+      --warn-bg: #2E2814;
+      --bad: #D98A7E;
+      --bad-bg: #33201C;
+      --focus: #43B489;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #12160F;
+    --surface: #1A1F16;
+    --surface-2: #232A1E;
+    --ink: #ECEADE;
+    --ink-muted: #A6AC9C;
+    --ink-faint: #767C6E;
+    --hair: #2C3327;
+    --hair-strong: #3A4233;
+    --accent: #43B489;
+    --accent-ink: #6ECBA6;
+    --copper: #D0965C;
+    --good: #4FB584;
+    --good-bg: #1C2C22;
+    --warn: #D2A44A;
+    --warn-bg: #2E2814;
+    --bad: #D98A7E;
+    --bad-bg: #33201C;
+    --focus: #43B489;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px clamp(14px, 3vw, 34px) 72px; }
+
+  /* ---- header ---- */
+  header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--hair); }
+  .brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .mark {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600; font-size: clamp(28px, 4.4vw, 40px);
+    letter-spacing: -.01em; line-height: 1; color: var(--ink);
+    text-wrap: balance;
+  }
+  .mark .tick { color: var(--accent); }
+  .tagline { color: var(--ink-muted); font-size: 14px; max-width: 46ch; }
+  .theme-btn {
+    border: 1px solid var(--hair-strong); background: var(--surface); color: var(--ink-muted);
+    border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* ---- summary tiles ---- */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0 24px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--hair); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 3px;
+  }
+  .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-faint); font-weight: 600; }
+  .tile .v { font-family: "IBM Plex Mono", monospace; font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .tile .s { font-size: 12px; color: var(--ink-muted); }
+  .tile.accent .v { color: var(--accent); }
+
+  /* ---- layout ---- */
+  .cols { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } .tiles { grid-template-columns: repeat(2, 1fr); } }
+
+  .panel { background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .panel-head { padding: 16px 20px 14px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .panel-head h2 { margin: 0; font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 19px; letter-spacing: -.01em; }
+  .panel-head .hint { font-size: 12px; color: var(--ink-faint); }
+  .panel-body { padding: 18px 20px 20px; }
+
+  label.fl { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); margin: 0 0 6px; }
+  textarea, input[type=text], input[type=number], select {
+    width: 100%; font: inherit; color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--hair-strong); border-radius: 10px; padding: 10px 12px;
+  }
+  textarea { resize: vertical; min-height: 74px; line-height: 1.45; }
+  input:focus, textarea:focus, select:focus, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  input[type=number] { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  .field { margin-bottom: 14px; }
+  .row { display: grid; gap: 12px; }
+  .row.two { grid-template-columns: 1fr 1fr; }
+  .row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  .btn {
+    font: inherit; font-weight: 600; cursor: pointer; border-radius: 10px; padding: 10px 16px;
+    border: 1px solid transparent; display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+  }
+  .btn.primary { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .btn.primary, :root:not([data-theme="light"]) .btn.primary { color: #10160F; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #10160F; } }
+  .btn.primary:hover { background: var(--accent-ink); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--hair-strong); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.full { width: 100%; }
+
+  .id-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .filepick { font-size: 12px; color: var(--ink-muted); }
+  .filepick input { display: none; }
+  .filepick .pick { text-decoration: underline; cursor: pointer; color: var(--accent); }
+
+  /* ---- identify result ---- */
+  .idcard { margin-top: 14px; border: 1px dashed var(--hair-strong); border-radius: 12px; padding: 14px; background: var(--surface-2); }
+  .idcard.hidden { display: none; }
+  .idcard h3 { margin: 0 0 4px; font-size: 15px; }
+  .idrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; letter-spacing: .03em; text-transform: uppercase; }
+  .chip.conf-high { background: var(--good-bg); color: var(--good); }
+  .chip.conf-medium { background: var(--warn-bg); color: var(--warn); }
+  .chip.conf-low { background: var(--bad-bg); color: var(--bad); }
+  .chip.cat { background: var(--surface); border: 1px solid var(--hair-strong); color: var(--ink-muted); }
+  .idcard .reason { font-size: 13px; color: var(--ink-muted); margin: 2px 0 8px; }
+  .flags { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .flags li { font-size: 12.5px; color: var(--bad); display: flex; gap: 6px; }
+  .flags li::before { content: "▲"; font-size: 9px; margin-top: 3px; }
+  .links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .links a { font-size: 12.5px; text-decoration: none; color: var(--accent); border: 1px solid var(--hair-strong); border-radius: 8px; padding: 5px 10px; background: var(--surface); }
+  .links a:hover { border-color: var(--accent); }
+  .thinking { font-size: 13px; color: var(--ink-muted); display: inline-flex; gap: 8px; align-items: center; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite ease-in-out; }
+  @keyframes pulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  .err { color: var(--bad); font-size: 13px; }
+
+  /* ---- verdict ---- */
+  .verdict { margin-top: 4px; border-radius: 14px; padding: 16px; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; border: 1px solid var(--hair); }
+  .verdict.buy { background: var(--good-bg); border-color: color-mix(in srgb, var(--good) 35%, transparent); }
+  .verdict.maybe { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+  .verdict.skip { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+  .verdict .stamp { font-family: "Fraunces", serif; font-weight: 700; font-size: 22px; line-height: 1; padding: 12px 14px; border-radius: 10px; text-align: center; letter-spacing: -.01em; }
+  .verdict.buy .stamp { color: var(--good); border: 2px solid var(--good); }
+  .verdict.maybe .stamp { color: var(--warn); border: 2px solid var(--warn); }
+  .verdict.skip .stamp { color: var(--bad); border: 2px solid var(--bad); }
+  .vgrid { display: grid; grid-template-columns: repeat(3, auto); gap: 4px 20px; }
+  .vgrid .m { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
+  .vgrid .n { font-family: "IBM Plex Mono", monospace; font-size: 19px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .vnote { font-size: 12.5px; color: var(--ink-muted); grid-column: 1 / -1; margin-top: 4px; }
+
+  .save-row { display: flex; gap: 10px; margin-top: 14px; }
+
+  /* ---- ledger ---- */
+  .ledger-empty { padding: 26px 20px; text-align: center; color: var(--ink-faint); font-size: 14px; }
+  .lg-controls { display: flex; align-items: center; gap: 8px; }
+  .lg-controls select { padding: 5px 8px; font-size: 12px; width: auto; border-radius: 8px; }
+  .find { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 13px 20px; border-bottom: 1px solid var(--hair); }
+  .find:last-child { border-bottom: none; }
+  .find .badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; text-align: center; padding: 8px 0; border-radius: 8px; }
+  .badge.buy { background: var(--good-bg); color: var(--good); }
+  .badge.maybe { background: var(--warn-bg); color: var(--warn); }
+  .badge.skip { background: var(--bad-bg); color: var(--bad); }
+  .find .name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .find .meta { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .ex-tag { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--copper); border: 1px solid color-mix(in srgb, var(--copper) 45%, transparent); border-radius: 5px; padding: 1px 5px; }
+  .find .num { text-align: right; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .find .num .profit { font-size: 16px; font-weight: 600; }
+  .find .num .profit.pos { color: var(--good); }
+  .find .num .profit.neg { color: var(--bad); }
+  .find .num .roi { font-size: 11px; color: var(--ink-muted); }
+  .find .del { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 15px; padding: 2px 4px; line-height: 1; }
+  .find .del:hover { color: var(--bad); }
+  .find-actions { display: flex; align-items: center; gap: 6px; }
+
+  .note-line { font-size: 12px; color: var(--ink-faint); margin-top: 18px; text-align: center; line-height: 1.6; }
+  .note-line a { color: var(--accent); }
+  .disclaimer { margin-top: 8px; font-size: 11.5px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand"><span class="mark">Flip<span class="tick"> ✓</span> Check</span></div>
+      <p class="tagline">Before you buy it to resell — will it clear eBay fees and postage, or eat your margin? Paste a listing, let it name the item, run the numbers.</p>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle colour theme"><span id="themeIcon">◐</span><span id="themeLabel">Theme</span></button>
+  </header>
+
+  <section class="tiles" id="tiles" aria-label="Summary of your finds"></section>
+
+  <div class="cols">
+    <!-- ASSESS -->
+    <section class="panel" aria-labelledby="assessH">
+      <div class="panel-head"><h2 id="assessH">Assess a find</h2><span class="hint">step 1 · identify &nbsp;→&nbsp; step 2 · the maths</span></div>
+      <div class="panel-body">
+        <div class="field">
+          <label class="fl" for="listing">Seller's title / description</label>
+          <textarea id="listing" placeholder="Paste exactly what the seller wrote — e.g. &quot;old effects pedal, orange, works, no box €20&quot;. The vaguer their title, the bigger the opportunity."></textarea>
+        </div>
+
+        <div class="id-actions">
+          <button class="btn primary" id="idBtn">Identify &amp; value</button>
+          <label class="filepick" id="photoWrap" hidden>
+            <span class="pick" id="photoLabel">＋ add a photo</span>
+            <input type="file" id="photo" accept="image/*">
+          </label>
+          <span class="hint" id="idUnavail" hidden>AI identify isn't available in this view — fill the fields below by hand.</span>
+        </div>
+
+        <div class="idcard hidden" id="idcard"></div>
+
+        <hr style="border:none;border-top:1px solid var(--hair);margin:18px 0">
+
+        <div class="row two">
+          <div class="field"><label class="fl" for="item">Item</label><input type="text" id="item" placeholder="e.g. Boss DS-1 pedal"></div>
+          <div class="field"><label class="fl" for="source">Source</label>
+            <select id="source">
+              <option>Charity shop</option><option>Car boot / market</option><option>Adverts.ie</option>
+              <option>DoneDeal</option><option>Facebook Marketplace</option><option>Vinted</option>
+              <option>eBay</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row three">
+          <div class="field"><label class="fl" for="buy">Buy price €</label><input type="number" id="buy" min="0" step="0.5" value="18"></div>
+          <div class="field"><label class="fl" for="sell">Resale € <span title="What it actually sells for — the midpoint of eBay/Reverb SOLD listings, not asking prices" style="cursor:help">ⓘ</span></label><input type="number" id="sell" min="0" step="0.5" value="55"></div>
+          <div class="field"><label class="fl" for="postage">Postage €</label><input type="number" id="postage" min="0" step="0.5" value="8"></div>
+        </div>
+
+        <div class="row three">
+          <div class="field"><label class="fl" for="feePct">Sell fee %</label><input type="number" id="feePct" min="0" step="0.5" value="13"></div>
+          <div class="field"><label class="fl" for="fixedFee">Fixed fee €</label><input type="number" id="fixedFee" min="0" step="0.05" value="0.35"></div>
+          <div class="field"><label class="fl" for="packaging">Packaging €</label><input type="number" id="packaging" min="0" step="0.5" value="1"></div>
+        </div>
+
+        <div class="verdict skip" id="verdict" role="status">
+          <div class="stamp" id="stamp">—</div>
+          <div>
+            <div class="vgrid">
+              <div><div class="m">Net profit</div><div class="n" id="vProfit">—</div></div>
+              <div><div class="m">ROI</div><div class="n" id="vRoi">—</div></div>
+              <div><div class="m">Margin</div><div class="n" id="vMargin">—</div></div>
+            </div>
+            <div class="vnote" id="vNote"></div>
+          </div>
+        </div>
+
+        <div class="save-row">
+          <button class="btn primary" id="saveBtn">Save to ledger</button>
+          <button class="btn ghost" id="clearForm">Clear form</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEDGER -->
+    <section class="panel" aria-labelledby="ledgerH">
+      <div class="panel-head">
+        <h2 id="ledgerH">Finds ledger</h2>
+        <div class="lg-controls">
+          <label class="sr" for="sortBy">Sort finds</label>
+          <select id="sortBy">
+            <option value="roi">Best ROI</option>
+            <option value="profit">Most profit</option>
+            <option value="recent">Newest</option>
+          </select>
+        </div>
+      </div>
+      <div id="ledger"></div>
+    </section>
+  </div>
+
+  <p class="note-line">
+    Resale figures are only ever a starting guess — confirm each one against real <strong>eBay sold listings</strong> (free in Seller&nbsp;Hub → Product Research) or <strong>Reverb</strong> price guides before you buy. The barcode scanner in the eBay app gives instant sold history in a charity shop.
+  </p>
+  <p class="note-line disclaimer">General information, not financial or tax advice. Reselling income can be taxable in Ireland once it's regular — worth checking as it grows. Your ledger is saved only in this browser.</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var LS_KEY = "flipcheck.finds.v2";
+  var THEME_KEY = "flipcheck.theme";
+
+  var EXAMPLES = [
+    { id: "ex1", example: true, item: "Boss DS-1 distortion pedal", source: "Charity shop", buy: 18, sell: 55, postage: 8, feePct: 13, fixedFee: 0.35, packaging: 1, createdAt: 4 },
+    { id: "ex2", example: true, item: "Focusrite Scarlett 2i2 interface", source: "Adverts.ie", buy: 40, sell: 95, postage: 8, feePct: 13, fixedFee: 0.35, packaging: 1.5, createdAt: 3 },
+    { id: "ex3", example: true, item: "Vintage Levi's denim jacket", source: "Car boot / market", buy: 6, sell: 24, postage: 6, feePct: 13, fixedFee: 0.35, packaging: 1, createdAt: 2 },
+    { id: "ex4", example: true, item: "Penguin Classics paperback (common)", source: "Charity shop", buy: 2, sell: 6.5, postage: 4.5, feePct: 13, fixedFee: 0.35, packaging: 0.6, createdAt: 1 }
+  ];
+
+  // ---------- storage ----------
+  function load() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    return EXAMPLES.slice();
+  }
+  function save() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(finds)); } catch (e) {}
+  }
+  var finds = load();
+
+  // ---------- maths ----------
+  function calc(f) {
+    var buy = num(f.buy), sell = num(f.sell), postage = num(f.postage),
+        pack = num(f.packaging), feePct = num(f.feePct), fixed = num(f.fixedFee);
+    var fees = sell * (feePct / 100) + fixed;
+    var invested = buy + postage + pack;
+    var net = sell - fees - invested;
+    var roi = invested > 0 ? (net / invested) * 100 : 0;
+    var margin = sell > 0 ? (net / sell) * 100 : 0;
+    return { net: net, roi: roi, margin: margin, fees: fees, invested: invested };
+  }
+  function verdict(r) {
+    if (r.net >= 10 && r.roi >= 50) return "buy";
+    if (r.net >= 4 && r.roi >= 20) return "maybe";
+    return "skip";
+  }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  function eur(n) { return "€" + (Math.round(n * 100) / 100).toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function pct(n) { return (n >= 0 ? "" : "") + Math.round(n) + "%"; }
+
+  // ---------- form <-> live verdict ----------
+  var F = {
+    item: byId("item"), source: byId("source"), buy: byId("buy"), sell: byId("sell"),
+    postage: byId("postage"), feePct: byId("feePct"), fixedFee: byId("fixedFee"), packaging: byId("packaging")
+  };
+  function readForm() {
+    return { item: F.item.value.trim(), source: F.source.value, buy: F.buy.value, sell: F.sell.value,
+      postage: F.postage.value, feePct: F.feePct.value, fixedFee: F.fixedFee.value, packaging: F.packaging.value };
+  }
+  function renderVerdict() {
+    var f = readForm(), r = calc(f), v = verdict(r);
+    var el = byId("verdict");
+    el.className = "verdict " + v;
+    byId("stamp").textContent = v === "buy" ? "BUY" : v === "maybe" ? "MAYBE" : "SKIP";
+    byId("vProfit").textContent = eur(r.net);
+    byId("vProfit").style.color = r.net >= 0 ? "var(--good)" : "var(--bad)";
+    byId("vRoi").textContent = pct(r.roi);
+    byId("vMargin").textContent = pct(r.margin);
+    var notes = { buy: "Clears fees and postage with room to spare — worth grabbing.",
+      maybe: "Thin. Only if you can source it cheaper, post it lighter, or you enjoy the flip.",
+      skip: "Fees and postage swallow it. Walk on — or hold out for a much lower buy price." };
+    byId("vNote").textContent = notes[v] + "  (eBay takes " + eur(r.fees) + " · you'd have " + eur(r.invested) + " tied up)";
+  }
+  Object.keys(F).forEach(function (k) { F[k].addEventListener("input", renderVerdict); });
+
+  // ---------- ledger ----------
+  function renderTiles() {
+    var real = finds.filter(function (f) { return !f.example; });
+    var pool = finds;
+    var worth = pool.filter(function (f) { return verdict(calc(f)) !== "skip"; }).length;
+    var rois = pool.map(function (f) { return calc(f).roi; });
+    var avgRoi = rois.length ? rois.reduce(function (a, b) { return a + b; }, 0) / rois.length : 0;
+    var potential = pool.filter(function (f) { return verdict(calc(f)) !== "skip"; })
+      .reduce(function (a, f) { return a + calc(f).net; }, 0);
+    tile("Finds logged", String(pool.length), real.length ? "" : "examples shown", false);
+    tile("Worth buying", String(worth) + "/" + pool.length, "clear fees + postage", true);
+    tile("Avg ROI", pct(avgRoi), "across all finds", false);
+    tile("Profit on the table", eur(potential), "if you flip the keepers", false);
+    var t = byId("tiles"); t.innerHTML = tilesHTML; tilesHTML = "";
+  }
+  var tilesHTML = "";
+  function tile(k, v, s, accent) {
+    tilesHTML += '<div class="tile' + (accent ? ' accent' : '') + '"><span class="k">' + k +
+      '</span><span class="v">' + esc(v) + '</span><span class="s">' + esc(s) + '</span></div>';
+  }
+
+  function renderLedger() {
+    renderTiles();
+    var host = byId("ledger");
+    if (!finds.length) {
+      host.innerHTML = '<div class="ledger-empty">No finds yet. Assess something on the left and hit <strong>Save to ledger</strong>.</div>';
+      return;
+    }
+    var sort = byId("sortBy").value;
+    var arr = finds.slice().map(function (f) { return { f: f, r: calc(f) }; });
+    arr.sort(function (a, b) {
+      if (sort === "profit") return b.r.net - a.r.net;
+      if (sort === "recent") return (b.f.createdAt || 0) - (a.f.createdAt || 0);
+      return b.r.roi - a.r.roi;
+    });
+    host.innerHTML = arr.map(function (o) {
+      var v = verdict(o.r);
+      var lbl = v === "buy" ? "Buy" : v === "maybe" ? "Maybe" : "Skip";
+      return '<div class="find">' +
+        '<div class="badge ' + v + '">' + lbl + '</div>' +
+        '<div><div class="name">' + esc(o.f.item || "Untitled find") +
+          (o.f.example ? ' <span class="ex-tag">example</span>' : '') + '</div>' +
+          '<div class="meta">' + esc(o.f.source || "") + ' · buy ' + eur(num(o.f.buy)) + ' → sell ' + eur(num(o.f.sell)) + '</div></div>' +
+        '<div class="find-actions"><div class="num"><div class="profit ' + (o.r.net >= 0 ? 'pos' : 'neg') + '">' + eur(o.r.net) +
+          '</div><div class="roi">' + pct(o.r.roi) + ' ROI</div></div>' +
+          '<button class="del" data-id="' + esc(o.f.id) + '" aria-label="Delete find" title="Delete">✕</button></div>' +
+        '</div>';
+    }).join("");
+    Array.prototype.forEach.call(host.querySelectorAll(".del"), function (b) {
+      b.addEventListener("click", function () {
+        finds = finds.filter(function (f) { return f.id !== b.getAttribute("data-id"); });
+        save(); renderLedger();
+      });
+    });
+  }
+  byId("sortBy").addEventListener("change", renderLedger);
+
+  // ---------- save / clear ----------
+  byId("saveBtn").addEventListener("click", function () {
+    var f = readForm();
+    if (!f.item) { F.item.focus(); F.item.style.borderColor = "var(--bad)"; setTimeout(function(){ F.item.style.borderColor = ""; }, 1200); return; }
+    f.id = "f" + Date.now();
+    f.createdAt = Date.now();
+    finds.unshift(f);
+    save(); renderLedger();
+    var btn = byId("saveBtn"); var old = btn.textContent; btn.textContent = "✓ Saved"; btn.disabled = true;
+    setTimeout(function () { btn.textContent = old; btn.disabled = false; }, 1100);
+  });
+  byId("clearForm").addEventListener("click", function () {
+    F.item.value = ""; byId("listing").value = "";
+    F.buy.value = ""; F.sell.value = ""; F.postage.value = "8"; F.packaging.value = "1";
+    byId("idcard").className = "idcard hidden"; renderVerdict(); byId("listing").focus();
+  });
+
+  // ---------- identify (sample capability) ----------
+  var sampleFn = null, imageLimits = null, pickedFile = null;
+  byId("idBtn").addEventListener("click", runIdentify);
+
+  function ebayLink(q) { return "https://www.ebay.ie/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sacat=0&LH_Sold=1&LH_Complete=1"; }
+  function reverbLink(q) { return "https://reverb.com/marketplace?query=" + encodeURIComponent(q); }
+  function researchLink() { return "https://www.ebay.ie/sh/research"; }
+
+  function runIdentify() {
+    var listing = byId("listing").value.trim();
+    if (!listing && !pickedFile) { byId("listing").focus(); return; }
+    if (!sampleFn) return;
+    var card = byId("idcard");
+    card.className = "idcard";
+    card.innerHTML = '<span class="thinking"><span class="dot"></span>Identifying &amp; pricing… (this can take 20–40s)</span>';
+
+    var prompt =
+      "You are a secondhand-resale appraiser for the Irish/UK market (eBay.ie, Reverb, Vinted, Adverts.ie). " +
+      "From the seller's listing" + (pickedFile ? " and the attached photo" : "") + ", work out what the item most likely is and roughly what it resells for USED.\n\n" +
+      "Listing text: \"" + listing.replace(/"/g, "'").slice(0, 3000) + "\"\n\n" +
+      "Reply with ONLY this JSON object:\n" +
+      '{"item": "short plain name a buyer would search", "brand": "", "model": "", ' +
+      '"category": "music-gear|books|vintage-clothing|electronics|homeware|other", ' +
+      '"conditionNotes": "what the listing implies about condition/completeness", ' +
+      '"resaleLow": number, "resaleHigh": number, ' +
+      '"confidence": "high|medium|low", ' +
+      '"redFlags": ["short warnings: fakes, missing parts, heavy/awkward to post, saturated market — [] if none"], ' +
+      '"searchQuery": "the exact keywords to check eBay SOLD listings", ' +
+      '"reasoning": "one or two sentences"}\n\n' +
+      "Rules: resaleLow/resaleHigh are EUR for a realistic private-sale price after a normal wait, NOT top asking prices — treat them as a ballpark to be verified against actual sold listings. " +
+      "If the item or model is unclear, widen the range and set confidence to low. Never invent a specific model you cannot justify from the text or photo.";
+
+    var opts = { modelTier: "default" };
+    if (pickedFile && imageLimits) opts.images = pickedFile;
+
+    sampleFn.json(prompt, opts).then(function (d) {
+      renderIdCard(d);
+    }).catch(function (e) {
+      var msg = e && e.code === "rate_limited" ? "Too many requests just now — give it a minute and try again."
+        : e && e.code === "invalid_json" ? "Couldn't read a clean result — try again, or fill the fields by hand."
+        : e && e.code === "not_granted" ? "Claude access wasn't granted for this page."
+        : e && e.code === "refused" ? "Couldn't assess that input — try rephrasing the listing."
+        : "Something went wrong identifying that. Fill the fields by hand and run the maths.";
+      card.innerHTML = '<span class="err">' + esc(msg) + '</span>';
+      if (e && e.code === "not_granted") { sampleFn = null; showUnavailable(); }
+    });
+  }
+
+  function renderIdCard(d) {
+    d = d || {};
+    var conf = (d.confidence || "low").toLowerCase();
+    if (["high", "medium", "low"].indexOf(conf) < 0) conf = "low";
+    var low = num(d.resaleLow), high = num(d.resaleHigh);
+    var q = d.searchQuery || [d.brand, d.model, d.item].filter(Boolean).join(" ") || byId("listing").value.slice(0, 60);
+    var flags = Array.isArray(d.redFlags) ? d.redFlags.filter(Boolean) : [];
+    var title = [d.brand, d.model].filter(Boolean).join(" ") || d.item || "Item";
+
+    var html = '<div class="idrow"><h3>' + esc(title) + '</h3>' +
+      '<span class="chip conf-' + conf + '">' + conf + ' confidence</span>' +
+      (d.category ? '<span class="chip cat">' + esc(d.category) + '</span>' : '') + '</div>';
+    if (low || high) html += '<div class="idrow"><strong style="font-family:\'IBM Plex Mono\',monospace">Sold range ≈ ' +
+      eur(low) + " – " + eur(high) + '</strong></div>';
+    if (d.conditionNotes) html += '<div class="reason">' + esc(d.conditionNotes) + '</div>';
+    if (d.reasoning) html += '<div class="reason">' + esc(d.reasoning) + '</div>';
+    if (flags.length) html += '<ul class="flags">' + flags.map(function (f) { return '<li>' + esc(String(f)) + '</li>'; }).join("") + '</ul>';
+    html += '<div class="links">' +
+      '<a href="' + esc(ebayLink(q)) + '" target="_blank" rel="noopener">eBay sold ↗</a>' +
+      '<a href="' + esc(researchLink()) + '" target="_blank" rel="noopener">Product Research ↗</a>' +
+      (conf !== "low" && /gear|music|electronic/.test(d.category || "") ? '<a href="' + esc(reverbLink(q)) + '" target="_blank" rel="noopener">Reverb ↗</a>' : '') +
+      '<button class="btn ghost" id="copyQ" style="padding:5px 10px;font-size:12.5px">Copy “' + esc(q.slice(0, 28)) + (q.length > 28 ? "…" : "") + '”</button>' +
+      '</div>' +
+      '<p class="reason" style="margin-top:8px">Prefilled the maths below with the midpoint — <strong>replace it with the real sold figure</strong> once you\'ve checked.</p>';
+
+    byId("idcard").innerHTML = html;
+
+    // prefill form
+    if (d.item || title) F.item.value = title !== "Item" ? title : (d.item || "");
+    if (low && high) F.sell.value = Math.round((low + high) / 2 * 2) / 2;
+    renderVerdict();
+
+    var cq = byId("copyQ");
+    if (cq) cq.addEventListener("click", function () {
+      try { navigator.clipboard.writeText(q); cq.textContent = "Copied ✓"; setTimeout(function(){ cq.textContent = "Copy query"; }, 1200); } catch (e) {}
+    });
+  }
+
+  function showUnavailable() {
+    byId("idBtn").disabled = true;
+    byId("idUnavail").hidden = false;
+    byId("photoWrap").hidden = true;
+  }
+
+  // photo picker
+  byId("photo").addEventListener("change", function (e) {
+    pickedFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+    byId("photoLabel").textContent = pickedFile ? "✓ " + pickedFile.name.slice(0, 22) : "＋ add a photo";
+  });
+
+  // ---------- theme ----------
+  (function initTheme() {
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (saved) document.documentElement.setAttribute("data-theme", saved);
+    updateThemeBtn();
+    byId("themeBtn").addEventListener("click", function () {
+      var cur = document.documentElement.getAttribute("data-theme");
+      var isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      var next = isDark ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+      updateThemeBtn();
+    });
+    function updateThemeBtn() {
+      var cur = document.documentElement.getAttribute("data-theme");
+      var isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      byId("themeIcon").textContent = isDark ? "☀" : "☾";
+      byId("themeLabel").textContent = isDark ? "Light" : "Dark";
+    }
+  })();
+
+  // ---------- utils ----------
+  function byId(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  // ---------- boot ----------
+  renderVerdict();
+  renderLedger();
+
+  if (window.claude && claude.use) {
+    claude.use("sample").then(function (s) {
+      if (!s) { showUnavailable(); return; }
+      sampleFn = s;
+      if (s.limits) s.limits().then(function (l) {
+        if (l && l.images) { imageLimits = l.images; byId("photoWrap").hidden = false; byId("photo").accept = l.images.mediaTypes.join(","); }
+      }).catch(function () {});
+    }).catch(function () { showUnavailable(); });
+  } else {
+    showUnavailable();
+  }
+})();
+</script>
