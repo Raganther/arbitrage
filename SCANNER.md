@@ -13,18 +13,41 @@ the two halves meet in Scout's shared `db` store.
 └────────────────────┘                 └──────────────────┘                    └───────────────┘
 ```
 
-## What the scanner does, each run
+## The scanner script — `scanner/scan.mjs`
 
-1. For each **saved search** in the chosen niche, find current active listings
-   (via the eBay Browse API if access is granted, or a third-party listings feed
-   — see `BUILD_PLAN.md` for the access reality).
-2. For each promising hit, estimate a used resale value (from sold comps) and
-   keep only those whose margin clears fees + postage.
-3. Write each keeper into Scout's `db` at `discoveries/<id>`.
-4. Optionally prune old `new` discoveries so the collection stays small.
+A runnable first version lives at [`scanner/scan.mjs`](./scanner/scan.mjs). It uses
+**only the accessible eBay Browse API** (active listings), so it works the moment
+your Production keyset is live — no closed sold-price API needed.
 
-The scanner is a scheduled Claude session (a Routine). It writes to Scout's store
-with the artifact database tools — no credentials live in the page.
+**How it spots deals without sold prices:** for each *specific* item search
+("Boss DS-1", not "guitar pedal"), it pulls the current listings, takes the
+**median asking price** as a rough market value, and flags listings priced well
+below it (default: ≥30% under, and ≥€15 gap). That's a candidate — an underpriced
+listing relative to its peers — which you then verify against real **sold** comps
+in Scout. `estResale` is the median asking price, a proxy, never a guarantee.
+
+```bash
+cd scanner
+node scan.mjs --dry-run          # no key needed: writes a sample scan-results.json
+EBAY_CLIENT_ID=... EBAY_CLIENT_SECRET=... node scan.mjs   # the real thing
+```
+
+It writes **`scan-results.json`** (the discovery schema below). Runs anywhere with
+Node 18+ and network access to `api.ebay.com` — your own machine on a timer
+(`cron`/Task Scheduler), or a small cloud runner. It does **not** run inside the
+Scout page or a sandbox that blocks eBay.
+
+## Getting results into Scout
+
+Two ways the `scan-results.json` reaches your board:
+
+1. **Import (built, works today).** Scout's **Discover** tab has an
+   *Import scan results* button — pick the file and the candidates appear as a
+   ranked live list you can add to your board. Reliable, manual, one click.
+2. **Fully automatic (later).** A scheduled Claude session (Routine) running where
+   eBay is reachable pushes each keeper straight into Scout's `db` at
+   `discoveries/<id>` via the artifact database tools — no import step, no
+   credentials in the page. Needs a runner with open egress to eBay.
 
 ## Discovery document schema
 

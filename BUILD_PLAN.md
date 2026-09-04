@@ -58,12 +58,14 @@ reliable in. No scanning, no scraping, breaks no rules, highest value per hour.
   measurably better.
 - **Effort:** 1–2 sessions · **Cost:** €0 · **Data access:** none.
 
-### Phase 2 — Auto-discovery for one niche 🔧 App side shipped ([`scout.html`](./scout.html) · Discover tab)
-The **Discover** tab, saved searches, ROI ranking, and the live `db` seam are
-built and working with sample candidates ([`SCANNER.md`](./SCANNER.md) documents
-the seam). Remaining: stand up the scheduled **scanner** agent that writes real
-listings into the store — an ongoing, autonomous piece gated on the data-path and
-niche decisions below.
+### Phase 2 — Auto-discovery for one niche 🔧 Built, awaiting the eBay key
+The **Discover** tab, saved searches, ROI ranking, the live `db` seam, and a
+one-click **Import** are built and working. The **scanner** ([`scanner/scan.mjs`](./scanner/scan.mjs))
+is written and runnable (`--dry-run` works today) — it finds underpriced listings
+from the eBay Browse API by comparing each to its peers' median asking price
+([`SCANNER.md`](./SCANNER.md)). The only thing outstanding is your **eBay
+Production keyset** (applied for) plus a machine that can reach eBay to run it on
+a timer. Optional later: full automation (scheduled push into `db`, no import).
 
 Wire the top of the loop. On a schedule, pull real active listings for a handful
 of saved searches in one niche, run each through the valuation engine, and drop
