@@ -48,6 +48,23 @@ so the scanner only needs to supply `price` and `estResale` honestly. When the
 `discoveries` collection is empty, Discover shows clearly-marked **sample**
 candidates instead, so the flow is usable before the scanner exists.
 
+## Why it isn't running yet
+
+Two walls, both real:
+
+1. **This build environment blocks eBay.** The network egress proxy returns
+   `EGRESS_BLOCKED` for `ebay.ie`, and web search only surfaces generic category
+   pages — no per-listing prices to trust. A scanner scheduled in *this*
+   environment cannot reach eBay, so it would have nothing real to write.
+2. **Even with network access, listing data is gated** — the eBay Browse API
+   needs a developer account (and possibly approval), or a paid third-party feed.
+
+So the scanner needs a home with open egress to eBay **and** API credentials.
+Until then, Scout's **Assess** tab is the manual version of the same step: paste a
+listing you find while browsing yourself, and it values and boards it. The
+Discover tab shows sample candidates so the pipeline is ready the moment a real
+scanner starts writing to `discoveries/`.
+
 ## Honest limits
 
 - **Active-listing access is approval-gated** (eBay) or **paid** (third-party).

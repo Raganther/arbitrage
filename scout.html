@@ -124,6 +124,9 @@
   .save-row { display: flex; gap: 10px; margin-top: 13px; }
 
   /* board */
+  .board-toolbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .board-toolbar .filters { margin-bottom: 0; }
+  #exportBtn { white-space: nowrap; padding: 7px 13px; font-size: 13px; }
   .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
   .filt { font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-muted); background: var(--surface); border: 1px solid var(--hair-strong); border-radius: 999px; padding: 6px 13px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; }
   .filt[aria-pressed="true"] { color: #fff; background: var(--accent); border-color: var(--accent); }
@@ -341,7 +344,10 @@
 
   <!-- BOARD -->
   <section class="panel" id="panel-board" role="tabpanel" aria-labelledby="tab-board" hidden>
-    <div class="filters" id="filters"></div>
+    <div class="board-toolbar">
+      <div class="filters" id="filters"></div>
+      <button class="btn ghost" id="exportBtn" hidden>⤓ Export CSV</button>
+    </div>
     <div id="board"></div>
   </section>
 
@@ -705,7 +711,7 @@
     } else {
       cands = sampleCandidates(disc.niche);
       note.className = "disc-note";
-      note.innerHTML = 'These are <span class="ex-tag">sample</span> candidates, so you can see the ranking and the hand-off to your board. The page can’t call eBay directly — real listings arrive when a <strong>scheduled scanner</strong> (a server-side agent) searches your saved terms, values each hit, and writes the good ones here. Ask Claude to set the scanner up for this niche.';
+      note.innerHTML = 'These are <span class="ex-tag">sample</span> candidates, so you can see the ranking and the hand-off to your board. The page can’t call eBay directly — real listings arrive only when a <strong>scanner</strong> writes them into Scout’s store (schema in <code>SCANNER.md</code>). That scanner needs a machine with eBay access + API credentials, so until it’s running, use <strong>Assess</strong> to add finds you spot while browsing yourself.';
     }
     cands = cands.filter(function (c) { return !disc.added[c.id] || true; });
     cands.sort(function (a, b) { return candScore(b).roi - candScore(a).roi; });
@@ -767,6 +773,35 @@
     queriesFor(disc.niche).push(v); id("qinput").value = ""; saveDisc(); renderQueries();
   });
 
+  // ---------- CSV export (downloads capability) ----------
+  var downloadsFn = null;
+  function realFinds() { return Store.finds.slice(); }
+  function csvCell(v) { var s = String(v == null ? "" : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function buildCSV() {
+    var cols = ["item", "category", "source", "status", "buy_eur", "est_resale_eur", "postage_eur", "packaging_eur", "fee_pct", "fixed_fee_eur", "est_profit_eur", "est_roi_pct", "sold_price_eur", "real_profit_eur", "estimate_error_pct", "created"];
+    var lines = [cols.join(",")];
+    realFinds().forEach(function (f) {
+      var est = calc(f); var sold = f.status === "sold" && num(f.soldPrice) > 0;
+      var real = sold ? calc(f, f.soldPrice) : null;
+      var errPct = sold && num(f.sell) > 0 ? (num(f.soldPrice) - num(f.sell)) / num(f.sell) * 100 : "";
+      var row = [f.item, CAT_LABEL[f.category] || f.category || "", f.source || "", f.status,
+        num(f.buy), num(f.sell), num(f.postage), num(f.packaging), num(f.feePct), num(f.fixedFee),
+        round2(est.net), Math.round(est.roi), sold ? num(f.soldPrice) : "", real ? round2(real.net) : "",
+        errPct === "" ? "" : Math.round(errPct), f.createdAt ? new Date(f.createdAt).toISOString().slice(0, 10) : ""];
+      lines.push(row.map(csvCell).join(","));
+    });
+    return lines.join("\n");
+  }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function updateExportBtn() { var b = id("exportBtn"); b.hidden = !(downloadsFn && realFinds().length); }
+  id("exportBtn").addEventListener("click", function () {
+    if (!downloadsFn) return;
+    var b = id("exportBtn"), old = b.textContent;
+    downloadsFn.save({ filename: "scout-finds-" + new Date().toISOString().slice(0, 10) + ".csv", data: buildCSV() })
+      .then(function () { b.textContent = "✓ Saved"; setTimeout(function () { b.textContent = old; }, 1400); })
+      .catch(function () {});
+  });
+
   // ---------- tabs ----------
   var TABS = ["assess", "discover", "board", "learn"];
   function selectTab(name) {
@@ -796,6 +831,7 @@
     if (!id("panel-discover").hidden) renderDiscover();
     if (!id("panel-board").hidden) renderBoard();
     if (!id("panel-learn").hidden) renderLearn();
+    updateExportBtn();
   }
   Store.onChange(refreshAll);
 
@@ -836,6 +872,8 @@
         Store.discoveries = arr; Store.emit();
       }, function () {});
     }).catch(function () {});
+
+    claude.use("downloads").then(function (d) { if (d) { downloadsFn = d; updateExportBtn(); } }).catch(function () {});
   } else { showUnavailable(); }
 
   // local fallback initial load (until/unless db takes over)
