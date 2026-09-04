@@ -4,7 +4,29 @@ A small, practical toolkit for buying underpriced secondhand items and reselling
 them (eBay, Reverb, Vinted, Adverts.ie, DoneDeal) — built for a low-capital,
 few-hours-a-week, ROI-driven start in Ireland.
 
-## Flip Check
+## Scout — the main app (Phase 1)
+
+**[`scout.html`](./scout.html)** — the full tool: assess, track, and learn.
+
+Three tabs:
+
+- **Assess** — paste a listing, let Scout identify it and rough out a resale
+  range, run the Ireland fee/margin maths for a BUY/MAYBE/SKIP verdict, then add
+  the good ones to your board.
+- **Board** — every find as a card you move through its lifecycle: watching →
+  bought → listed → sold (or passed). When you mark something sold, you record
+  what it actually went for.
+- **Learning** — the feedback loop. Once you've logged real sale prices it shows
+  your realized profit, hit rate, and an **estimate-calibration** chart (where
+  you pegged the resale vs what it sold for), plus a per-category breakdown of
+  **where your instinct is reliable** — the whole point of the exercise.
+
+Storage uses the artifact `db` capability, so your finds sync across devices
+(phone in the shop, laptop at home); it falls back to browser-local storage when
+`db` isn't available. Opens with clearly-marked example finds that vanish once
+you add your own.
+
+## Flip Check — the lite calculator (Phase 0)
 
 **[`flip-check.html`](./flip-check.html)** — a buy/skip decision tool.
 

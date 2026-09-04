@@ -1,0 +1,645 @@
+<title>Scout</title>
+<meta name="description" content="Track resale finds from spotted to sold, and see how your value estimates hold up against real sale prices.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #F4F1E8; --surface: #FCFAF4; --surface-2: #F0ECE0;
+    --ink: #1B231E; --ink-muted: #5D655C; --ink-faint: #8A9088;
+    --hair: #E2DBC9; --hair-strong: #D2C9B2;
+    --accent: #0E6B4F; --accent-ink: #0A5540; --copper: #A9682F;
+    --good: #14764E; --good-bg: #E4EFE5;
+    --warn: #9C6A10; --warn-bg: #F3E9CF;
+    --bad: #A9433A; --bad-bg: #F1E0DA;
+    --slate: #3F6B7A;
+    --shadow: 0 1px 2px rgba(27,35,30,.05), 0 8px 24px -14px rgba(27,35,30,.25);
+    --focus: #0E6B4F;
+    color-scheme: light;
+  }
+  :root:not([data-theme="light"]) { @media (prefers-color-scheme: dark) {
+    --ground: #12160F; --surface: #1A1F16; --surface-2: #232A1E;
+    --ink: #ECEADE; --ink-muted: #A6AC9C; --ink-faint: #767C6E;
+    --hair: #2C3327; --hair-strong: #3A4233;
+    --accent: #43B489; --accent-ink: #6ECBA6; --copper: #D0965C;
+    --good: #4FB584; --good-bg: #1C2C22;
+    --warn: #D2A44A; --warn-bg: #2E2814;
+    --bad: #D98A7E; --bad-bg: #33201C;
+    --slate: #7FB0C0;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+    --focus: #43B489; color-scheme: dark;
+  } }
+  :root[data-theme="dark"] {
+    --ground: #12160F; --surface: #1A1F16; --surface-2: #232A1E;
+    --ink: #ECEADE; --ink-muted: #A6AC9C; --ink-faint: #767C6E;
+    --hair: #2C3327; --hair-strong: #3A4233;
+    --accent: #43B489; --accent-ink: #6ECBA6; --copper: #D0965C;
+    --good: #4FB584; --good-bg: #1C2C22;
+    --warn: #D2A44A; --warn-bg: #2E2814;
+    --bad: #D98A7E; --bad-bg: #33201C;
+    --slate: #7FB0C0;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+    --focus: #43B489; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink);
+    font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 22px clamp(14px, 3vw, 34px) 80px; }
+  .mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: baseline; gap: 11px; }
+  .mark { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: clamp(27px, 4.2vw, 38px); letter-spacing: -.01em; line-height: 1; }
+  .mark .co { color: var(--accent); }
+  .subttl { color: var(--ink-muted); font-size: 13.5px; }
+  .top-right { display: flex; align-items: center; gap: 10px; }
+  .store-chip { font-size: 11px; font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); border: 1px solid var(--hair-strong); border-radius: 999px; padding: 4px 10px; display: inline-flex; gap: 6px; align-items: center; }
+  .store-chip .d { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); }
+  .store-chip.synced .d { background: var(--good); }
+  .theme-btn { border: 1px solid var(--hair-strong); background: var(--surface); color: var(--ink-muted); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* tabs */
+  .tabs { display: flex; gap: 4px; margin: 22px 0 20px; border-bottom: 1px solid var(--hair); }
+  .tab { font: inherit; font-weight: 600; font-size: 14.5px; color: var(--ink-muted); background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 14px; cursor: pointer; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px; }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .count { font-family: "IBM Plex Mono", monospace; font-size: 11px; background: var(--surface-2); color: var(--ink-muted); border-radius: 999px; padding: 1px 7px; }
+  .panel[hidden] { display: none; }
+
+  .grid2 { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,1fr); gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; box-shadow: var(--shadow); }
+  .card-head { padding: 15px 20px 13px; border-bottom: 1px solid var(--hair); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .card-head h2 { margin: 0; font-family: "Fraunces", serif; font-weight: 600; font-size: 18px; letter-spacing: -.01em; }
+  .card-head .hint { font-size: 12px; color: var(--ink-faint); }
+  .card-body { padding: 18px 20px 20px; }
+
+  label.fl { display: block; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); margin: 0 0 6px; }
+  textarea, input[type=text], input[type=number], select { width: 100%; font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--hair-strong); border-radius: 10px; padding: 9px 11px; }
+  textarea { resize: vertical; min-height: 66px; line-height: 1.45; }
+  input:focus, textarea:focus, select:focus, button:focus-visible, [role=tab]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  input[type=number] { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .field { margin-bottom: 13px; }
+  .row { display: grid; gap: 11px; } .row.two { grid-template-columns: 1fr 1fr; } .row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  .btn { font: inherit; font-weight: 600; cursor: pointer; border-radius: 10px; padding: 9px 15px; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 7px; justify-content: center; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .btn.primary { color: #10160F; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #10160F; } }
+  .btn.primary:hover { background: var(--accent-ink); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--hair-strong); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .id-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .filepick { font-size: 12px; color: var(--ink-muted); }
+  .filepick input { display: none; }
+  .filepick .pick { text-decoration: underline; cursor: pointer; color: var(--accent); }
+  .idcard { margin-top: 13px; border: 1px dashed var(--hair-strong); border-radius: 12px; padding: 13px; background: var(--surface-2); }
+  .idcard.hidden { display: none; }
+  .idrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 7px; }
+  .idrow h3 { margin: 0; font-size: 15px; }
+  .chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; letter-spacing: .03em; text-transform: uppercase; }
+  .chip.conf-high { background: var(--good-bg); color: var(--good); } .chip.conf-medium { background: var(--warn-bg); color: var(--warn); } .chip.conf-low { background: var(--bad-bg); color: var(--bad); }
+  .chip.cat { background: var(--surface); border: 1px solid var(--hair-strong); color: var(--ink-muted); }
+  .idcard .reason { font-size: 13px; color: var(--ink-muted); margin: 2px 0 8px; }
+  .links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .links a, .links button { font-size: 12.5px; text-decoration: none; color: var(--accent); border: 1px solid var(--hair-strong); border-radius: 8px; padding: 5px 10px; background: var(--surface); cursor: pointer; font-family: inherit; }
+  .links a:hover, .links button:hover { border-color: var(--accent); }
+  .thinking { font-size: 13px; color: var(--ink-muted); display: inline-flex; gap: 8px; align-items: center; }
+  .dot-a { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite ease-in-out; }
+  @keyframes pulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .dot-a { animation: none; } }
+  .err { color: var(--bad); font-size: 13px; }
+
+  .verdict { margin-top: 2px; border-radius: 14px; padding: 15px; display: grid; grid-template-columns: auto 1fr; gap: 13px; align-items: center; border: 1px solid var(--hair); }
+  .verdict.buy { background: var(--good-bg); } .verdict.maybe { background: var(--warn-bg); } .verdict.skip { background: var(--bad-bg); }
+  .verdict .stamp { font-family: "Fraunces", serif; font-weight: 700; font-size: 21px; line-height: 1; padding: 11px 13px; border-radius: 10px; text-align: center; }
+  .verdict.buy .stamp { color: var(--good); border: 2px solid var(--good); } .verdict.maybe .stamp { color: var(--warn); border: 2px solid var(--warn); } .verdict.skip .stamp { color: var(--bad); border: 2px solid var(--bad); }
+  .vgrid { display: grid; grid-template-columns: repeat(3, auto); gap: 3px 18px; }
+  .vgrid .m { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-muted); }
+  .vgrid .n { font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .save-row { display: flex; gap: 10px; margin-top: 13px; }
+
+  /* board */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filt { font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-muted); background: var(--surface); border: 1px solid var(--hair-strong); border-radius: 999px; padding: 6px 13px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; }
+  .filt[aria-pressed="true"] { color: #fff; background: var(--accent); border-color: var(--accent); }
+  :root[data-theme="dark"] .filt[aria-pressed="true"] { color: #10160F; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .filt[aria-pressed="true"] { color: #10160F; } }
+  .filt .fc { font-family: "IBM Plex Mono", monospace; font-size: 11px; opacity: .8; }
+
+  .find { background: var(--surface); border: 1px solid var(--hair); border-radius: 13px; padding: 14px 16px; margin-bottom: 11px; box-shadow: var(--shadow); }
+  .find-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .find .name { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .find .meta { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+  .ex-tag { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--copper); border: 1px solid color-mix(in srgb, var(--copper) 45%, transparent); border-radius: 5px; padding: 1px 5px; }
+  .stpill { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .stpill.watching { background: var(--surface-2); color: var(--ink-muted); }
+  .stpill.bought { background: var(--warn-bg); color: var(--warn); }
+  .stpill.listed { background: color-mix(in srgb, var(--slate) 18%, transparent); color: var(--slate); }
+  .stpill.sold { background: var(--good-bg); color: var(--good); }
+  .stpill.passed { background: var(--bad-bg); color: var(--bad); }
+  .find-money { display: flex; gap: 18px; margin-top: 11px; flex-wrap: wrap; }
+  .fm { display: flex; flex-direction: column; }
+  .fm .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); }
+  .fm .v { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .fm .v.pos { color: var(--good); } .fm .v.neg { color: var(--bad); }
+  .find-ctl { display: flex; gap: 9px; align-items: center; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--hair); flex-wrap: wrap; }
+  .find-ctl select { width: auto; padding: 6px 9px; font-size: 13px; border-radius: 8px; }
+  .find-ctl .sold-in { display: none; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-muted); }
+  .find-ctl .sold-in input { width: 92px; padding: 6px 9px; font-size: 13px; border-radius: 8px; }
+  .find-ctl .del { margin-left: auto; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 15px; }
+  .find-ctl .del:hover { color: var(--bad); }
+  .empty { text-align: center; color: var(--ink-faint); padding: 40px 20px; font-size: 14px; }
+
+  /* learning */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  @media (max-width: 640px) { .tiles { grid-template-columns: repeat(2, 1fr); } .row.three { grid-template-columns: 1fr; } }
+  .tile { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 14px 16px; }
+  .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); font-weight: 600; }
+  .tile .v { font-family: "IBM Plex Mono", monospace; font-size: 25px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -.02em; margin-top: 2px; }
+  .tile .s { font-size: 12px; color: var(--ink-muted); }
+  .tile .v.pos { color: var(--good); } .tile .v.neg { color: var(--bad); }
+
+  .learn-card { background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; box-shadow: var(--shadow); margin-bottom: 18px; }
+  .learn-card .lh { padding: 15px 20px 4px; }
+  .learn-card h2 { margin: 0; font-family: "Fraunces", serif; font-weight: 600; font-size: 18px; }
+  .learn-card .lsub { font-size: 12.5px; color: var(--ink-muted); margin: 3px 0 0; max-width: 60ch; }
+  .learn-body { padding: 14px 20px 20px; }
+  .cal-legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-muted); margin-bottom: 12px; }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .lg-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .lg-dot.est { background: var(--ink-faint); } .lg-dot.act { background: var(--accent); }
+  .cal-row { display: grid; grid-template-columns: 150px 1fr 64px; gap: 12px; align-items: center; padding: 7px 0; }
+  @media (max-width: 640px) { .cal-row { grid-template-columns: 96px 1fr 54px; gap: 8px; } }
+  .cal-name { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cal-track { position: relative; height: 22px; }
+  .cal-base { position: absolute; top: 10px; left: 0; right: 0; height: 2px; background: var(--hair); border-radius: 2px; }
+  .cal-seg { position: absolute; top: 9px; height: 4px; border-radius: 3px; }
+  .cal-seg.pos { background: var(--good); } .cal-seg.neg { background: var(--bad); }
+  .cal-dot { position: absolute; top: 5px; width: 12px; height: 12px; border-radius: 50%; transform: translateX(-6px); border: 2px solid var(--surface); }
+  .cal-dot.est { background: var(--ink-faint); } .cal-dot.act { background: var(--accent); z-index: 2; }
+  .cal-err { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600; text-align: right; }
+  .cal-err.pos { color: var(--good); } .cal-err.neg { color: var(--bad); }
+  .cal-axis { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); margin-top: 4px; padding-left: 162px; }
+  @media (max-width: 640px) { .cal-axis { padding-left: 104px; } }
+
+  .cat-row { display: grid; grid-template-columns: 130px 1fr 96px; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--hair); }
+  .cat-row:first-child { border-top: none; }
+  @media (max-width: 640px) { .cat-row { grid-template-columns: 96px 1fr 80px; gap: 8px; } }
+  .cat-name { font-size: 13px; font-weight: 600; }
+  .cat-name .n { display: block; font-size: 11px; font-weight: 400; color: var(--ink-faint); }
+  .cat-bar { position: relative; height: 26px; }
+  .cat-mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--hair-strong); }
+  .cat-fill { position: absolute; top: 7px; height: 12px; border-radius: 3px; }
+  .cat-fill.pos { background: color-mix(in srgb, var(--good) 65%, transparent); left: 50%; } .cat-fill.neg { background: color-mix(in srgb, var(--bad) 65%, transparent); right: 50%; }
+  .cat-val { text-align: right; }
+  .cat-val .big { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-weight: 600; }
+  .cat-val .rel { font-size: 10.5px; color: var(--ink-faint); display: block; }
+
+  .note-line { font-size: 12px; color: var(--ink-faint); margin-top: 22px; text-align: center; line-height: 1.6; }
+  .note-line a { color: var(--accent); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand"><span class="mark">Sc<span class="co">👁</span>ut</span></div>
+      <div class="subttl">Spot it, track it, and learn how good your resale estimates really are.</div>
+    </div>
+    <div class="top-right">
+      <span class="store-chip" id="storeChip"><span class="d"></span><span id="storeLabel">local</span></span>
+      <button class="theme-btn" id="themeBtn">☾ Dark</button>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button class="tab" role="tab" id="tab-assess" aria-controls="panel-assess" aria-selected="true">Assess</button>
+    <button class="tab" role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false">Board <span class="count" id="boardCount">0</span></button>
+    <button class="tab" role="tab" id="tab-learn" aria-controls="panel-learn" aria-selected="false">Learning</button>
+  </div>
+
+  <!-- ASSESS -->
+  <section class="panel" id="panel-assess" role="tabpanel" aria-labelledby="tab-assess">
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head"><h2>Assess a find</h2><span class="hint">identify → value → add to board</span></div>
+        <div class="card-body">
+          <div class="field">
+            <label class="fl" for="listing">Seller's title / description</label>
+            <textarea id="listing" placeholder="Paste what the seller wrote — e.g. &quot;old orange effects pedal, works, no box €20&quot;. The vaguer the title, the bigger the opportunity."></textarea>
+          </div>
+          <div class="id-actions">
+            <button class="btn primary" id="idBtn">Identify &amp; value</button>
+            <label class="filepick" id="photoWrap" hidden><span class="pick" id="photoLabel">＋ add a photo</span><input type="file" id="photo" accept="image/*"></label>
+            <span class="hint" id="idUnavail" hidden>AI identify isn't available here — fill the fields by hand.</span>
+          </div>
+          <div class="idcard hidden" id="idcard"></div>
+          <hr style="border:none;border-top:1px solid var(--hair);margin:16px 0">
+          <div class="row two">
+            <div class="field"><label class="fl" for="item">Item</label><input type="text" id="item" placeholder="e.g. Boss DS-1 pedal"></div>
+            <div class="field"><label class="fl" for="category">Category</label>
+              <select id="category"><option value="music-gear">Music gear</option><option value="books">Books</option><option value="vintage-clothing">Vintage clothing</option><option value="electronics">Electronics</option><option value="homeware">Homeware</option><option value="other">Other</option></select>
+            </div>
+          </div>
+          <div class="field"><label class="fl" for="source">Source</label>
+            <select id="source"><option>Charity shop</option><option>Car boot / market</option><option>Adverts.ie</option><option>DoneDeal</option><option>Facebook Marketplace</option><option>Vinted</option><option>eBay</option><option>Other</option></select>
+          </div>
+          <div class="row three">
+            <div class="field"><label class="fl" for="buy">Buy price €</label><input type="number" id="buy" min="0" step="0.5" value="18"></div>
+            <div class="field"><label class="fl" for="sell">Est. resale €</label><input type="number" id="sell" min="0" step="0.5" value="55"></div>
+            <div class="field"><label class="fl" for="postage">Postage €</label><input type="number" id="postage" min="0" step="0.5" value="8"></div>
+          </div>
+          <div class="row three">
+            <div class="field"><label class="fl" for="feePct">Sell fee %</label><input type="number" id="feePct" min="0" step="0.5" value="13"></div>
+            <div class="field"><label class="fl" for="fixedFee">Fixed fee €</label><input type="number" id="fixedFee" min="0" step="0.05" value="0.35"></div>
+            <div class="field"><label class="fl" for="packaging">Packaging €</label><input type="number" id="packaging" min="0" step="0.5" value="1"></div>
+          </div>
+          <div class="verdict skip" id="verdict" role="status">
+            <div class="stamp" id="stamp">—</div>
+            <div><div class="vgrid">
+              <div><div class="m">Est. profit</div><div class="n" id="vProfit">—</div></div>
+              <div><div class="m">ROI</div><div class="n" id="vRoi">—</div></div>
+              <div><div class="m">Margin</div><div class="n" id="vMargin">—</div></div>
+            </div></div>
+          </div>
+          <div class="save-row">
+            <button class="btn primary" id="saveBtn">Add to board →</button>
+            <button class="btn ghost" id="clearForm">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>How this works</h2></div>
+        <div class="card-body" style="color:var(--ink-muted);font-size:14px;line-height:1.6">
+          <p style="margin-top:0"><strong style="color:var(--ink)">1 · Assess</strong> — paste a listing, let Scout name it and rough out a resale range, then run the fee-and-postage maths for a buy/skip verdict.</p>
+          <p><strong style="color:var(--ink)">2 · Track</strong> — add the good ones to your <strong>Board</strong> and move each one along as you buy, list and sell it.</p>
+          <p><strong style="color:var(--ink)">3 · Learn</strong> — when you record what a find actually sold for, the <strong>Learning</strong> tab shows how close your estimate was — and which categories your instinct is reliable in.</p>
+          <p style="margin-bottom:0;padding-top:6px;border-top:1px solid var(--hair)">The estimate you set here is the number the system grades later. Base it on real <strong>eBay sold</strong> listings, not asking prices — the Identify step links you straight to them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOARD -->
+  <section class="panel" id="panel-board" role="tabpanel" aria-labelledby="tab-board" hidden>
+    <div class="filters" id="filters"></div>
+    <div id="board"></div>
+  </section>
+
+  <!-- LEARNING -->
+  <section class="panel" id="panel-learn" role="tabpanel" aria-labelledby="tab-learn" hidden>
+    <div class="tiles" id="learnTiles"></div>
+    <div id="learnContent"></div>
+  </section>
+
+  <p class="note-line" id="footNote">
+    Base your estimates on real <strong>eBay sold listings</strong> — that's what makes the learning honest. General information, not financial or tax advice.
+  </p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var LS_KEY = "scout.finds.v1", THEME_KEY = "scout.theme";
+  var STATUSES = ["watching", "bought", "listed", "sold", "passed"];
+  var STATUS_LABEL = { watching: "Watching", bought: "Bought", listed: "Listed", sold: "Sold", passed: "Passed" };
+  var CAT_LABEL = { "music-gear": "Music gear", "books": "Books", "vintage-clothing": "Vintage clothing", "electronics": "Electronics", "homeware": "Homeware", "other": "Other" };
+
+  var EXAMPLES = [
+    { id: "ex1", example: true, item: "Boss DS-1 distortion pedal", category: "music-gear", source: "Charity shop", buy: 18, sell: 55, postage: 8, feePct: 13, fixedFee: 0.35, packaging: 1, status: "sold", soldPrice: 60, createdAt: 6 },
+    { id: "ex2", example: true, item: "Focusrite Scarlett 2i2", category: "music-gear", source: "Adverts.ie", buy: 40, sell: 95, postage: 8, feePct: 13, fixedFee: 0.35, packaging: 1.5, status: "sold", soldPrice: 82, createdAt: 5 },
+    { id: "ex3", example: true, item: "Penguin Classics lot (8)", category: "books", source: "Charity shop", buy: 6, sell: 26, postage: 6, feePct: 13, fixedFee: 0.35, packaging: 1.2, status: "sold", soldPrice: 19, createdAt: 4 },
+    { id: "ex4", example: true, item: "Zoom H4n field recorder", category: "music-gear", source: "eBay", buy: 45, sell: 88, postage: 8, feePct: 13, fixedFee: 0.35, packaging: 1.5, status: "sold", soldPrice: 90, createdAt: 3 },
+    { id: "ex5", example: true, item: "Vintage Levi's denim jacket", category: "vintage-clothing", source: "Car boot / market", buy: 6, sell: 24, postage: 6, feePct: 13, fixedFee: 0.35, packaging: 1, status: "listed", createdAt: 2 },
+    { id: "ex6", example: true, item: "Sony MDR-V6 headphones", category: "electronics", source: "DoneDeal", buy: 25, sell: 70, postage: 8, feePct: 13, fixedFee: 0.35, packaging: 1.5, status: "watching", createdAt: 1 }
+  ];
+
+  // ---------- maths ----------
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  function calc(f, priceOverride) {
+    var sell = priceOverride != null ? num(priceOverride) : num(f.sell);
+    var buy = num(f.buy), postage = num(f.postage), pack = num(f.packaging), feePct = num(f.feePct), fixed = num(f.fixedFee);
+    var fees = sell * (feePct / 100) + fixed;
+    var invested = buy + postage + pack;
+    var net = sell - fees - invested;
+    return { net: net, roi: invested > 0 ? net / invested * 100 : 0, margin: sell > 0 ? net / sell * 100 : 0, fees: fees, invested: invested };
+  }
+  function verdict(r) { if (r.net >= 10 && r.roi >= 50) return "buy"; if (r.net >= 4 && r.roi >= 20) return "maybe"; return "skip"; }
+  function eur(n) { var s = (Math.round(n * 100) / 100).toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return "€" + s; }
+  function eur0(n) { return "€" + Math.round(n).toLocaleString("en-IE"); }
+  function pct(n) { return Math.round(n) + "%"; }
+  function signPct(n) { return (n > 0 ? "+" : "") + Math.round(n) + "%"; }
+
+  // ---------- store (db with localStorage fallback) ----------
+  var Store = {
+    mode: "local", db: null, finds: [], listeners: [],
+    onChange: function (fn) { this.listeners.push(fn); },
+    emit: function () { for (var i = 0; i < this.listeners.length; i++) this.listeners[i](); },
+    setLocal: function (arr) { this.finds = arr; try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch (e) {} this.emit(); },
+    loadLocal: function () { try { var r = localStorage.getItem(LS_KEY); if (r) return JSON.parse(r); } catch (e) {} return []; },
+    put: function (f) {
+      if (this.mode === "db") { this.db.doc("finds/" + f.id).set(f).catch(function (e) { console.warn("db set", e); }); }
+      else { var i = idx(this.finds, f.id); if (i >= 0) this.finds[i] = f; else this.finds.unshift(f); this.setLocal(this.finds); }
+    },
+    remove: function (id) {
+      if (this.mode === "db") { this.db.doc("finds/" + id).delete().catch(function (e) { console.warn("db del", e); }); }
+      else { this.setLocal(this.finds.filter(function (f) { return f.id !== id; })); }
+    }
+  };
+  function idx(arr, id) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return i; return -1; }
+
+  // display list: real finds if any, else examples (never persisted)
+  function displayFinds() { return Store.finds.length ? Store.finds.slice() : EXAMPLES.slice(); }
+  function usingExamples() { return Store.finds.length === 0; }
+
+  // ---------- ASSESS ----------
+  var F = { item: id("item"), category: id("category"), source: id("source"), buy: id("buy"), sell: id("sell"), postage: id("postage"), feePct: id("feePct"), fixedFee: id("fixedFee"), packaging: id("packaging") };
+  function readForm() { return { item: F.item.value.trim(), category: F.category.value, source: F.source.value, buy: F.buy.value, sell: F.sell.value, postage: F.postage.value, feePct: F.feePct.value, fixedFee: F.fixedFee.value, packaging: F.packaging.value }; }
+  function renderVerdict() {
+    var r = calc(readForm()), v = verdict(r);
+    id("verdict").className = "verdict " + v;
+    id("stamp").textContent = v === "buy" ? "BUY" : v === "maybe" ? "MAYBE" : "SKIP";
+    id("vProfit").textContent = eur(r.net); id("vProfit").style.color = r.net >= 0 ? "var(--good)" : "var(--bad)";
+    id("vRoi").textContent = pct(r.roi); id("vMargin").textContent = pct(r.margin);
+  }
+  Object.keys(F).forEach(function (k) { F[k].addEventListener("input", renderVerdict); });
+
+  id("saveBtn").addEventListener("click", function () {
+    var f = readForm();
+    if (!f.item) { F.item.focus(); F.item.style.borderColor = "var(--bad)"; setTimeout(function () { F.item.style.borderColor = ""; }, 1200); return; }
+    f.id = "f" + Date.now(); f.status = "watching"; f.createdAt = Date.now();
+    Store.put(f);
+    var b = id("saveBtn"), old = b.textContent; b.textContent = "✓ Added"; b.disabled = true;
+    setTimeout(function () { b.textContent = old; b.disabled = false; }, 1000);
+    flashTab("tab-board");
+  });
+  id("clearForm").addEventListener("click", function () {
+    F.item.value = ""; id("listing").value = ""; F.buy.value = ""; F.sell.value = ""; F.postage.value = "8"; F.packaging.value = "1";
+    id("idcard").className = "idcard hidden"; renderVerdict(); id("listing").focus();
+  });
+
+  // ---------- identify (sample) ----------
+  var sampleFn = null, imageLimits = null, pickedFile = null;
+  id("idBtn").addEventListener("click", runIdentify);
+  id("photo").addEventListener("change", function (e) { pickedFile = e.target.files && e.target.files[0] ? e.target.files[0] : null; id("photoLabel").textContent = pickedFile ? "✓ " + pickedFile.name.slice(0, 20) : "＋ add a photo"; });
+  function ebayLink(q) { return "https://www.ebay.ie/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sacat=0&LH_Sold=1&LH_Complete=1"; }
+  function reverbLink(q) { return "https://reverb.com/marketplace?query=" + encodeURIComponent(q); }
+
+  function runIdentify() {
+    var listing = id("listing").value.trim();
+    if (!listing && !pickedFile) { id("listing").focus(); return; }
+    if (!sampleFn) return;
+    var card = id("idcard"); card.className = "idcard";
+    card.innerHTML = '<span class="thinking"><span class="dot-a"></span>Identifying &amp; pricing… (20–40s)</span>';
+    var prompt = "You are a secondhand-resale appraiser for the Irish/UK market (eBay.ie, Reverb, Vinted, Adverts.ie). From the seller's listing" +
+      (pickedFile ? " and the attached photo" : "") + ", work out what the item most likely is and roughly what it resells for USED.\n\nListing: \"" +
+      listing.replace(/"/g, "'").slice(0, 3000) + "\"\n\nReply with ONLY this JSON:\n" +
+      '{"item":"short searchable name","brand":"","category":"music-gear|books|vintage-clothing|electronics|homeware|other","conditionNotes":"","resaleLow":number,"resaleHigh":number,"confidence":"high|medium|low","searchQuery":"keywords for eBay SOLD search","reasoning":"1-2 sentences"}\n\n' +
+      "Rules: resaleLow/High are EUR realistic private-sale prices (a ballpark to verify against actual sold listings, NOT top asking prices). If unclear, widen the range and set confidence low. Never invent a model you can't justify.";
+    var opts = { modelTier: "default" };
+    if (pickedFile && imageLimits) opts.images = pickedFile;
+    sampleFn.json(prompt, opts).then(renderIdCard).catch(function (e) {
+      var m = e && e.code === "rate_limited" ? "Too many requests — wait a minute and retry." : e && e.code === "invalid_json" ? "Couldn't read a clean result — try again or fill fields by hand." : e && e.code === "not_granted" ? "Claude access wasn't granted here." : "Couldn't identify that. Fill the fields by hand.";
+      card.innerHTML = '<span class="err">' + esc(m) + '</span>';
+      if (e && e.code === "not_granted") { sampleFn = null; showUnavailable(); }
+    });
+  }
+  function renderIdCard(d) {
+    d = d || {};
+    var conf = (d.confidence || "low").toLowerCase(); if (["high", "medium", "low"].indexOf(conf) < 0) conf = "low";
+    var low = num(d.resaleLow), high = num(d.resaleHigh);
+    var q = d.searchQuery || [d.brand, d.item].filter(Boolean).join(" ") || id("listing").value.slice(0, 60);
+    var title = [d.brand, d.item].filter(Boolean).join(" ") || d.item || "Item";
+    var html = '<div class="idrow"><h3>' + esc(title) + '</h3><span class="chip conf-' + conf + '">' + conf + ' confidence</span>' + (d.category ? '<span class="chip cat">' + esc(CAT_LABEL[d.category] || d.category) + '</span>' : '') + '</div>';
+    if (low || high) html += '<div class="idrow"><strong class="mono">Sold range ≈ ' + eur(low) + " – " + eur(high) + '</strong></div>';
+    if (d.conditionNotes) html += '<div class="reason">' + esc(d.conditionNotes) + '</div>';
+    if (d.reasoning) html += '<div class="reason">' + esc(d.reasoning) + '</div>';
+    html += '<div class="links"><a href="' + esc(ebayLink(q)) + '" target="_blank" rel="noopener">eBay sold ↗</a>' + (/gear|music|electronic/.test(d.category || "") ? '<a href="' + esc(reverbLink(q)) + '" target="_blank" rel="noopener">Reverb ↗</a>' : '') + '<button id="copyQ" type="button">Copy search</button></div><p class="reason" style="margin-top:8px">Prefilled the estimate below with the midpoint — <strong>replace it with the real sold figure</strong> before you trust it.</p>';
+    id("idcard").innerHTML = html;
+    if (title && title !== "Item") F.item.value = title;
+    if (d.category && CAT_LABEL[d.category]) F.category.value = d.category;
+    if (low && high) F.sell.value = Math.round((low + high) / 2 * 2) / 2;
+    renderVerdict();
+    var cq = id("copyQ"); if (cq) cq.addEventListener("click", function () { try { navigator.clipboard.writeText(q); cq.textContent = "Copied ✓"; setTimeout(function () { cq.textContent = "Copy search"; }, 1200); } catch (e) {} });
+  }
+  function showUnavailable() { id("idBtn").disabled = true; id("idUnavail").hidden = false; id("photoWrap").hidden = true; }
+
+  // ---------- BOARD ----------
+  var boardFilter = "all";
+  function renderFilters() {
+    var all = displayFinds();
+    var counts = { all: all.length }; STATUSES.forEach(function (s) { counts[s] = 0; });
+    all.forEach(function (f) { counts[f.status] = (counts[f.status] || 0) + 1; });
+    var order = ["all"].concat(STATUSES);
+    id("filters").innerHTML = order.map(function (s) {
+      var lbl = s === "all" ? "All" : STATUS_LABEL[s];
+      return '<button class="filt" data-f="' + s + '" aria-pressed="' + (boardFilter === s) + '">' + lbl + ' <span class="fc">' + (counts[s] || 0) + '</span></button>';
+    }).join("");
+    Array.prototype.forEach.call(id("filters").querySelectorAll(".filt"), function (b) {
+      b.addEventListener("click", function () { boardFilter = b.getAttribute("data-f"); renderBoard(); });
+    });
+  }
+  function renderBoard() {
+    renderFilters();
+    var host = id("board");
+    var list = displayFinds().filter(function (f) { return boardFilter === "all" || f.status === boardFilter; });
+    list.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    if (!list.length) { host.innerHTML = '<div class="empty">Nothing here yet. Assess a find and hit <strong>Add to board</strong>.</div>'; return; }
+    host.innerHTML = list.map(findCard).join("");
+    if (usingExamples()) host.insertAdjacentHTML("afterbegin", '<div class="empty" style="padding:12px 16px;text-align:left;background:var(--surface-2);border-radius:10px;margin-bottom:14px">These are <span class="ex-tag">example</span> finds so you can see how the board works. Add your first real find and they disappear.</div>');
+    wireCards();
+  }
+  function findCard(f) {
+    var sold = f.status === "sold" && num(f.soldPrice) > 0;
+    var est = calc(f), estV = verdict(est);
+    var moneyCells = '<div class="fm"><span class="k">Buy</span><span class="v">' + eur0(f.buy) + '</span></div>' +
+      '<div class="fm"><span class="k">Est. resale</span><span class="v">' + eur0(f.sell) + '</span></div>';
+    if (sold) {
+      var realized = calc(f, f.soldPrice);
+      var errPct = num(f.sell) > 0 ? (num(f.soldPrice) - num(f.sell)) / num(f.sell) * 100 : 0;
+      moneyCells += '<div class="fm"><span class="k">Sold for</span><span class="v">' + eur0(f.soldPrice) + '</span></div>' +
+        '<div class="fm"><span class="k">Real profit</span><span class="v ' + (realized.net >= 0 ? 'pos' : 'neg') + '">' + eur0(realized.net) + '</span></div>' +
+        '<div class="fm"><span class="k">vs estimate</span><span class="v ' + (errPct >= 0 ? 'pos' : 'neg') + '">' + signPct(errPct) + '</span></div>';
+    } else {
+      moneyCells += '<div class="fm"><span class="k">Est. profit</span><span class="v ' + (est.net >= 0 ? 'pos' : 'neg') + '">' + eur0(est.net) + '</span></div>' +
+        '<div class="fm"><span class="k">Verdict</span><span class="v">' + (estV === "buy" ? "Buy" : estV === "maybe" ? "Maybe" : "Skip") + '</span></div>';
+    }
+    var opts = STATUSES.map(function (s) { return '<option value="' + s + '"' + (f.status === s ? ' selected' : '') + '>' + STATUS_LABEL[s] + '</option>'; }).join("");
+    var ctl = f.example
+      ? '<span class="hint" style="font-size:12px;color:var(--ink-faint)">Example — add a real find to manage it</span>'
+      : '<label class="sr" for="st-' + f.id + '">Status</label><select class="st-sel" id="st-' + f.id + '" data-id="' + f.id + '">' + opts + '</select>' +
+        '<span class="sold-in" data-id="' + f.id + '"' + (f.status === "sold" ? ' style="display:inline-flex"' : '') + '>sold for €<input type="number" min="0" step="0.5" class="sold-price" data-id="' + f.id + '" value="' + (f.soldPrice != null ? esc(f.soldPrice) : '') + '" placeholder="' + Math.round(num(f.sell)) + '"></span>' +
+        '<button class="del" data-id="' + f.id + '" title="Delete" aria-label="Delete find">✕</button>';
+    return '<div class="find">' +
+      '<div class="find-top"><div><div class="name">' + esc(f.item || "Untitled") + (f.example ? ' <span class="ex-tag">example</span>' : '') + '</div>' +
+      '<div class="meta">' + esc(CAT_LABEL[f.category] || f.category || "") + ' · ' + esc(f.source || "") + '</div></div>' +
+      '<span class="stpill ' + f.status + '">' + STATUS_LABEL[f.status] + '</span></div>' +
+      '<div class="find-money">' + moneyCells + '</div>' +
+      '<div class="find-ctl">' + ctl + '</div></div>';
+  }
+  function wireCards() {
+    var host = id("board");
+    Array.prototype.forEach.call(host.querySelectorAll(".st-sel"), function (sel) {
+      sel.addEventListener("change", function () {
+        var f = findById(sel.getAttribute("data-id")); if (!f) return;
+        f = clone(f); f.status = sel.value;
+        var si = host.querySelector('.sold-in[data-id="' + f.id + '"]');
+        if (sel.value === "sold") { if (si) si.style.display = "inline-flex"; if (num(f.soldPrice) <= 0) { Store.put(f); return; } }
+        else if (si) si.style.display = "none";
+        Store.put(f);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll(".sold-price"), function (inp) {
+      inp.addEventListener("change", function () {
+        var f = findById(inp.getAttribute("data-id")); if (!f) return;
+        f = clone(f); f.soldPrice = num(inp.value); f.status = "sold"; f.soldAt = Date.now();
+        Store.put(f);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll(".del"), function (b) {
+      b.addEventListener("click", function () { Store.remove(b.getAttribute("data-id")); });
+    });
+  }
+  function findById(id0) { var a = Store.finds.length ? Store.finds : EXAMPLES; return a[idx(a, id0)]; }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  // ---------- LEARNING ----------
+  function renderLearn() {
+    var all = displayFinds();
+    var sold = all.filter(function (f) { return f.status === "sold" && num(f.soldPrice) > 0 && num(f.sell) > 0; });
+    var realizedProfit = sold.reduce(function (a, f) { return a + calc(f, f.soldPrice).net; }, 0);
+    var profitable = sold.filter(function (f) { return calc(f, f.soldPrice).net > 0; }).length;
+    var hitRate = sold.length ? profitable / sold.length * 100 : 0;
+    var absErr = sold.length ? sold.reduce(function (a, f) { return a + Math.abs((num(f.soldPrice) - num(f.sell)) / num(f.sell)); }, 0) / sold.length * 100 : 0;
+
+    var tiles = [
+      { k: "Finds tracked", v: String(all.length), s: "on the board" },
+      { k: "Sold", v: String(sold.length), s: "with a price logged" },
+      { k: "Realized profit", v: eur0(realizedProfit), s: "after fees + postage", cls: realizedProfit >= 0 ? "pos" : "neg" },
+      { k: "Estimate error", v: sold.length ? "±" + Math.round(absErr) + "%" : "—", s: "avg vs actual" }
+    ];
+    id("learnTiles").innerHTML = tiles.map(function (t) { return '<div class="tile"><div class="k">' + t.k + '</div><div class="v ' + (t.cls || "") + '">' + esc(t.v) + '</div><div class="s">' + t.s + '</div></div>'; }).join("");
+
+    var out = id("learnContent");
+    if (!sold.length) {
+      out.innerHTML = '<div class="learn-card"><div class="learn-body empty" style="padding:40px 24px">No sales logged yet. Mark a find <strong>Sold</strong> on the Board and enter what it went for — this tab then shows how close your estimate was, and which categories you can trust yourself in.</div></div>';
+      return;
+    }
+
+    // calibration: dumbbell est vs actual
+    var maxV = 0; sold.forEach(function (f) { maxV = Math.max(maxV, num(f.sell), num(f.soldPrice)); });
+    var dom = maxV * 1.08 || 1;
+    var rows = sold.slice().sort(function (a, b) {
+      var ea = (num(a.soldPrice) - num(a.sell)) / num(a.sell), eb = (num(b.soldPrice) - num(b.sell)) / num(b.sell);
+      return ea - eb;
+    }).map(function (f) {
+      var est = num(f.sell), act = num(f.soldPrice);
+      var e = (act - est) / est * 100, up = act >= est;
+      var lo = Math.min(est, act) / dom * 100, hi = Math.max(est, act) / dom * 100;
+      return '<div class="cal-row"><div class="cal-name" title="' + esc(f.item) + '">' + esc(f.item) + '</div>' +
+        '<div class="cal-track"><div class="cal-base"></div>' +
+        '<div class="cal-seg ' + (up ? "pos" : "neg") + '" style="left:' + lo + '%;width:' + Math.max(hi - lo, 0.5) + '%"></div>' +
+        '<div class="cal-dot est" style="left:' + (est / dom * 100) + '%" title="Estimate ' + eur0(est) + '"></div>' +
+        '<div class="cal-dot act" style="left:' + (act / dom * 100) + '%" title="Sold ' + eur0(act) + '"></div></div>' +
+        '<div class="cal-err ' + (up ? "pos" : "neg") + '">' + signPct(e) + '</div></div>';
+    }).join("");
+
+    // by-category
+    var byCat = {};
+    sold.forEach(function (f) {
+      var c = f.category || "other"; (byCat[c] = byCat[c] || []).push((num(f.soldPrice) - num(f.sell)) / num(f.sell) * 100);
+    });
+    var maxAbs = 1;
+    var cats = Object.keys(byCat).map(function (c) {
+      var arr = byCat[c], signed = arr.reduce(function (a, b) { return a + b; }, 0) / arr.length;
+      var abs = arr.reduce(function (a, b) { return a + Math.abs(b); }, 0) / arr.length;
+      maxAbs = Math.max(maxAbs, Math.abs(signed)); return { c: c, n: arr.length, signed: signed, abs: abs };
+    });
+    cats.sort(function (a, b) { return a.abs - b.abs; });
+    var catRows = cats.map(function (o) {
+      var w = Math.min(Math.abs(o.signed) / maxAbs * 50, 50), pos = o.signed >= 0;
+      var rel = o.abs <= 12 ? "tight" : o.abs <= 25 ? "fair" : "loose";
+      return '<div class="cat-row"><div class="cat-name">' + esc(CAT_LABEL[o.c] || o.c) + '<span class="n">' + o.n + ' sold</span></div>' +
+        '<div class="cat-bar"><div class="cat-mid"></div><div class="cat-fill ' + (pos ? "pos" : "neg") + '" style="width:' + w + '%"></div></div>' +
+        '<div class="cat-val"><span class="big ' + (pos ? "" : "") + '" style="color:' + (pos ? "var(--good)" : "var(--bad)") + '">' + signPct(o.signed) + '</span><span class="rel">±' + Math.round(o.abs) + '% · ' + rel + '</span></div></div>';
+    }).join("");
+
+    out.innerHTML =
+      '<div class="learn-card"><div class="lh"><h2>Estimate calibration</h2><p class="lsub">Each sold find: where you pegged the resale (grey) versus what it actually went for (green). A green bar means it beat your estimate; red means it fell short.</p></div>' +
+      '<div class="learn-body"><div class="cal-legend"><span><span class="lg-dot est"></span>Your estimate</span><span><span class="lg-dot act"></span>Actually sold for</span></div>' +
+      rows + '<div class="cal-axis"><span>€0</span><span>' + eur0(dom) + '</span></div></div></div>' +
+      '<div class="learn-card"><div class="lh"><h2>Where your instinct is reliable</h2><p class="lsub">Average gap between estimate and sale price, by category. Bars right of centre = you under-estimate (pleasant surprises); left = you over-estimate (the risky direction). Tighter is better.</p></div>' +
+      '<div class="learn-body">' + catRows + '</div></div>';
+  }
+
+  // ---------- tabs ----------
+  var TABS = ["assess", "board", "learn"];
+  function selectTab(name) {
+    TABS.forEach(function (t) {
+      var on = t === name;
+      id("tab-" + t).setAttribute("aria-selected", on);
+      id("panel-" + t).hidden = !on;
+    });
+    if (name === "board") renderBoard();
+    if (name === "learn") renderLearn();
+  }
+  TABS.forEach(function (t) { id("tab-" + t).addEventListener("click", function () { selectTab(t); }); });
+  document.querySelector(".tabs").addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    var cur = TABS.indexOf(document.querySelector('[aria-selected="true"]').id.replace("tab-", ""));
+    var next = (cur + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
+    selectTab(TABS[next]); id("tab-" + TABS[next]).focus();
+  });
+  function flashTab(tabId) { var t = id(tabId); t.style.transition = "color .2s"; t.style.color = "var(--copper)"; setTimeout(function () { t.style.color = ""; }, 700); }
+
+  // ---------- re-render on store change ----------
+  function refreshAll() {
+    id("boardCount").textContent = displayFinds().length;
+    if (!id("panel-board").hidden) renderBoard();
+    if (!id("panel-learn").hidden) renderLearn();
+  }
+  Store.onChange(refreshAll);
+
+  // ---------- theme ----------
+  (function () {
+    var saved = null; try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (saved) document.documentElement.setAttribute("data-theme", saved);
+    function sync() { var c = document.documentElement.getAttribute("data-theme"); var d = c ? c === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; id("themeBtn").textContent = d ? "☀ Light" : "☾ Dark"; }
+    sync();
+    id("themeBtn").addEventListener("click", function () { var c = document.documentElement.getAttribute("data-theme"); var d = c ? c === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; var n = d ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try { localStorage.setItem(THEME_KEY, n); } catch (e) {} sync(); });
+  })();
+
+  // ---------- utils ----------
+  function id(x) { return document.getElementById(x); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  // ---------- boot ----------
+  renderVerdict(); refreshAll();
+
+  if (window.claude && claude.use) {
+    claude.use("sample").then(function (s) {
+      if (!s) { showUnavailable(); return; }
+      sampleFn = s;
+      if (s.limits) s.limits().then(function (l) { if (l && l.images) { imageLimits = l.images; id("photoWrap").hidden = false; id("photo").accept = l.images.mediaTypes.join(","); } }).catch(function () {});
+    }).catch(function () { showUnavailable(); });
+
+    claude.use("db").then(function (db) {
+      if (!db) return; // stay local
+      Store.mode = "db"; Store.db = db;
+      id("storeLabel").textContent = "synced"; id("storeChip").className = "store-chip synced";
+      db.collection("finds").onSnapshot(function (snap) {
+        var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
+        Store.finds = arr; Store.emit();
+      }, function (e) { console.warn("db snapshot", e); id("storeLabel").textContent = "local"; id("storeChip").className = "store-chip"; Store.mode = "local"; Store.finds = Store.loadLocal(); Store.emit(); });
+    }).catch(function () {});
+  } else { showUnavailable(); }
+
+  // local fallback initial load (until/unless db takes over)
+  Store.finds = Store.loadLocal(); refreshAll();
+})();
+</script>

@@ -46,7 +46,7 @@ first because a scanner is worthless until something can judge what it finds.
 - **Built with:** single-page artifact, `sample` capability, local storage.
 - **Effort:** done · **Cost:** €0 · **Data access:** none.
 
-### Phase 1 — Tracking & the learning loop ⭐ Recommended next
+### Phase 1 — Tracking & the learning loop ✅ Shipped ([`scout.html`](./scout.html))
 Turn the flat ledger into a real tracker that follows finds to their outcome and
 scores your estimates — so you learn, with data, which niches your instinct is
 reliable in. No scanning, no scraping, breaks no rules, highest value per hour.
