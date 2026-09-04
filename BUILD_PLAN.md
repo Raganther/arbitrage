@@ -77,6 +77,14 @@ the underpriced ones onto your board — ranked, with reasoning and a sold-comp 
 - **Proves:** discovery can run itself — the full concept end to end, minus "everywhere".
 - **Effort:** 2–4 sessions · **Cost:** €0–low · **Data access:** Browse API or third-party key.
 
+### Phase 4 — Demand Radar (demand-first) ✅ Shipped ([`demand-radar.html`](./demand-radar.html))
+The strategic upgrade: stop guessing which niche to work. Radar scores a niche
+0–100 from real eBay signals (sell-through, price room, competition, volume,
+watchers) with a Strong/Test/Skip verdict, plus an AI qualitative read and the
+searches to measure it. Points you at underserved, high-margin corners
+(obsolete/trade parts, discontinued gear) instead of crowded commodity flips —
+before you spend anything. Feeds the niche choice that Scout's scanner then works.
+
 ### Phase 3 — Widen & automate (later)
 Only once accuracy data proves you can trust the estimates in a niche do you add
 more of them, and tighten the outcome loop. The north star ("any domain,

@@ -4,6 +4,21 @@ A small, practical toolkit for buying underpriced secondhand items and reselling
 them (eBay, Reverb, Vinted, Adverts.ie, DoneDeal) — built for a low-capital,
 few-hours-a-week, ROI-driven start in Ireland.
 
+## Demand Radar — pick the niche first (Phase 4)
+
+**[`demand-radar.html`](./demand-radar.html)** — score whether a niche is worth
+entering *before* you spend anything.
+
+The demand-first move: instead of finding a cheap thing and hoping it sells, find
+out what's genuinely underserved and go source *that*. Radar scores a niche 0–100
+from real eBay numbers — **sell-through, price room, competition, volume,
+watchers** — and gives a Strong / Test / Skip verdict with a component breakdown.
+An AI "demand read" (via `sample`) gives a qualitative first take and the exact
+searches to measure. Opens with example niches that show the lesson: obsolete
+boiler PCBs score high on tiny volume (few desperate buyers, high price, no
+competition) while generic phone cases score low despite huge volume. Saved
+niches sync via `db`.
+
 ## Scout — the main app (Phase 1)
 
 **[`scout.html`](./scout.html)** — the full tool: assess, track, and learn.

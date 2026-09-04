@@ -1,0 +1,360 @@
+<title>Demand Radar</title>
+<meta name="description" content="Score whether a resale niche is worth entering — proven demand against competition — before you spend a euro.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #F4F1E8; --surface: #FCFAF4; --surface-2: #F0ECE0;
+    --ink: #1B231E; --ink-muted: #5D655C; --ink-faint: #8A9088;
+    --hair: #E2DBC9; --hair-strong: #D2C9B2;
+    --accent: #0E6B4F; --accent-ink: #0A5540; --copper: #A9682F;
+    --good: #14764E; --good-bg: #E4EFE5;
+    --warn: #9C6A10; --warn-bg: #F3E9CF;
+    --bad: #A9433A; --bad-bg: #F1E0DA;
+    --track: #E6E0D0;
+    --shadow: 0 1px 2px rgba(27,35,30,.05), 0 8px 24px -14px rgba(27,35,30,.25);
+    --focus: #0E6B4F; color-scheme: light;
+  }
+  :root:not([data-theme="light"]) { @media (prefers-color-scheme: dark) {
+    --ground: #12160F; --surface: #1A1F16; --surface-2: #232A1E;
+    --ink: #ECEADE; --ink-muted: #A6AC9C; --ink-faint: #767C6E;
+    --hair: #2C3327; --hair-strong: #3A4233;
+    --accent: #43B489; --accent-ink: #6ECBA6; --copper: #D0965C;
+    --good: #4FB584; --good-bg: #1C2C22; --warn: #D2A44A; --warn-bg: #2E2814; --bad: #D98A7E; --bad-bg: #33201C;
+    --track: #2C3327;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+    --focus: #43B489; color-scheme: dark;
+  } }
+  :root[data-theme="dark"] {
+    --ground: #12160F; --surface: #1A1F16; --surface-2: #232A1E;
+    --ink: #ECEADE; --ink-muted: #A6AC9C; --ink-faint: #767C6E;
+    --hair: #2C3327; --hair-strong: #3A4233;
+    --accent: #43B489; --accent-ink: #6ECBA6; --copper: #D0965C;
+    --good: #4FB584; --good-bg: #1C2C22; --warn: #D2A44A; --warn-bg: #2E2814; --bad: #D98A7E; --bad-bg: #33201C;
+    --track: #2C3327;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px -16px rgba(0,0,0,.6);
+    --focus: #43B489; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 22px clamp(14px,3vw,34px) 80px; }
+  .mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .mark { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: clamp(27px,4.2vw,38px); letter-spacing: -.01em; line-height: 1; }
+  .mark .co { color: var(--accent); }
+  .subttl { color: var(--ink-muted); font-size: 13.5px; margin-top: 5px; max-width: 56ch; }
+  .top-right { display: flex; gap: 10px; align-items: center; }
+  .store-chip { font-size: 11px; font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); border: 1px solid var(--hair-strong); border-radius: 999px; padding: 4px 10px; display: inline-flex; gap: 6px; align-items: center; }
+  .store-chip .d { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); }
+  .store-chip.synced .d { background: var(--good); }
+  .theme-btn { border: 1px solid var(--hair-strong); background: var(--surface); color: var(--ink-muted); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; margin: 24px 0 20px; }
+  @media (max-width: 820px) { .cols { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; box-shadow: var(--shadow); }
+  .card-head { padding: 15px 20px 12px; border-bottom: 1px solid var(--hair); }
+  .card-head h2 { margin: 0; font-family: "Fraunces", serif; font-weight: 600; font-size: 18px; letter-spacing: -.01em; }
+  .card-head .step { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--copper); }
+  .card-body { padding: 18px 20px 20px; }
+
+  label.fl { display: block; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); margin: 0 0 6px; }
+  input[type=text], input[type=number], textarea { width: 100%; font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--hair-strong); border-radius: 10px; padding: 9px 11px; }
+  input[type=number] { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  input:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .field { margin-bottom: 13px; }
+  .field .help { font-size: 11.5px; color: var(--ink-faint); margin-top: 4px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+  .btn { font: inherit; font-weight: 600; cursor: pointer; border-radius: 10px; padding: 9px 15px; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 7px; justify-content: center; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .btn.primary { color: #10160F; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #10160F; } }
+  .btn.primary:hover { background: var(--accent-ink); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--hair-strong); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.full { width: 100%; }
+
+  /* AI brief */
+  .brief { margin-top: 14px; border: 1px dashed var(--hair-strong); border-radius: 12px; padding: 14px; background: var(--surface-2); font-size: 13.5px; }
+  .brief.hidden { display: none; }
+  .brief h3 { margin: 0 0 6px; font-size: 15px; }
+  .brief .lv { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; }
+  .lvchip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; letter-spacing: .02em; }
+  .lvchip .t { color: var(--ink-faint); font-weight: 500; }
+  .lv-high { background: var(--good-bg); color: var(--good); } .lv-medium { background: var(--warn-bg); color: var(--warn); } .lv-low { background: var(--bad-bg); color: var(--bad); }
+  .brief p { margin: 6px 0; color: var(--ink-muted); }
+  .brief .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--copper); font-weight: 600; margin-top: 10px; }
+  .brief ul { margin: 4px 0 0; padding-left: 18px; color: var(--ink); }
+  .brief ul.flags { color: var(--bad); }
+  .brief .searches { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 5px; }
+  .brief .searches a { font-size: 12px; text-decoration: none; color: var(--accent); border: 1px solid var(--hair-strong); border-radius: 7px; padding: 3px 9px; background: var(--surface); }
+  .brief .searches a:hover { border-color: var(--accent); }
+  .thinking { font-size: 13px; color: var(--ink-muted); display: inline-flex; gap: 8px; align-items: center; }
+  .dot-a { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite ease-in-out; }
+  @keyframes pulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .dot-a { animation: none; } }
+  .err { color: var(--bad); font-size: 13px; }
+  .disclaim { font-size: 11.5px; color: var(--ink-faint); margin-top: 10px; }
+
+  /* score */
+  .scorewrap { display: flex; gap: 16px; align-items: center; margin-bottom: 14px; }
+  .bignum { font-family: "IBM Plex Mono", monospace; font-size: 46px; font-weight: 600; line-height: 1; letter-spacing: -.02em; }
+  .band { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 4px 11px; border-radius: 999px; display: inline-block; }
+  .band.strong { background: var(--good-bg); color: var(--good); } .band.test { background: var(--warn-bg); color: var(--warn); } .band.thin { background: var(--bad-bg); color: var(--bad); }
+  .band-note { font-size: 12.5px; color: var(--ink-muted); margin-top: 4px; }
+  .str-line { font-size: 12.5px; color: var(--ink-muted); }
+  .parts { display: flex; flex-direction: column; gap: 9px; margin-top: 4px; }
+  .part { display: grid; grid-template-columns: 128px 1fr 30px; gap: 10px; align-items: center; }
+  @media (max-width: 500px) { .part { grid-template-columns: 100px 1fr 28px; } }
+  .part .pk { font-size: 12px; color: var(--ink-muted); }
+  .part .ptrack { height: 8px; background: var(--track); border-radius: 5px; overflow: hidden; }
+  .part .pfill { height: 100%; background: var(--accent); border-radius: 5px; }
+  .part .pv { font-family: "IBM Plex Mono", monospace; font-size: 12px; text-align: right; color: var(--ink-muted); }
+
+  /* radar list */
+  .radar-head { display: flex; justify-content: space-between; align-items: baseline; margin: 6px 0 14px; }
+  .radar-head h2 { margin: 0; font-family: "Fraunces", serif; font-weight: 600; font-size: 20px; }
+  .radar-head .hint { font-size: 12px; color: var(--ink-faint); }
+  .nrow { display: grid; grid-template-columns: 54px 1fr auto; gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--hair); border-radius: 13px; padding: 13px 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .nrow .sc { text-align: center; }
+  .nrow .sc .n { font-family: "IBM Plex Mono", monospace; font-size: 22px; font-weight: 600; line-height: 1; }
+  .nrow .sc .b { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .nrow.strong .sc .n, .nrow.strong .sc .b { color: var(--good); } .nrow.test .sc .n, .nrow.test .sc .b { color: var(--warn); } .nrow.thin .sc .n, .nrow.thin .sc .b { color: var(--bad); }
+  .nrow .nm { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .nrow .meta { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+  .ex-tag { font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--copper); border: 1px solid color-mix(in srgb, var(--copper) 45%, transparent); border-radius: 5px; padding: 1px 5px; }
+  .nrow .del { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 15px; }
+  .nrow .del:hover { color: var(--bad); }
+  .note-line { font-size: 12px; color: var(--ink-faint); margin-top: 22px; text-align: center; line-height: 1.6; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="mark">Demand&nbsp;R<span class="co">◎</span>dar</div>
+      <div class="subttl">Before you buy a single item — is this niche actually worth entering? Score proven demand against competition, so you chase what sells, not what you hope sells.</div>
+    </div>
+    <div class="top-right">
+      <span class="store-chip" id="storeChip"><span class="d"></span><span id="storeLabel">local</span></span>
+      <button class="theme-btn" id="themeBtn">☾ Dark</button>
+    </div>
+  </header>
+
+  <div class="cols">
+    <!-- RESEARCH -->
+    <div class="card">
+      <div class="card-head"><span class="step">Step 1 · get a read</span><h2>Research a niche</h2></div>
+      <div class="card-body">
+        <div class="field">
+          <label class="fl" for="niche">Niche or specific part</label>
+          <input type="text" id="niche" placeholder="e.g. discontinued guitar pedals · obsolete boiler PCBs · vintage film cameras">
+        </div>
+        <button class="btn primary full" id="briefBtn">Get a demand read</button>
+        <div class="brief hidden" id="brief"></div>
+        <p class="disclaim" id="briefUnavail" hidden>AI read isn't available here — go straight to the numbers on the right.</p>
+      </div>
+    </div>
+
+    <!-- SCORE -->
+    <div class="card">
+      <div class="card-head"><span class="step">Step 2 · score the numbers</span><h2>How underserved is it?</h2></div>
+      <div class="card-body">
+        <div class="row2">
+          <div class="field"><label class="fl" for="sold90">Sold / 90 days</label><input type="number" id="sold90" min="0" step="1" value="18"><div class="help">eBay Product Research</div></div>
+          <div class="field"><label class="fl" for="active">Active listings now</label><input type="number" id="active" min="0" step="1" value="5"><div class="help">current search count</div></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label class="fl" for="medianPrice">Median sold €</label><input type="number" id="medianPrice" min="0" step="1" value="140"></div>
+          <div class="field"><label class="fl" for="watchers">Avg watchers</label><input type="number" id="watchers" min="0" step="1" value="4"><div class="help">optional</div></div>
+        </div>
+        <div class="scorewrap">
+          <div><div class="bignum" id="scoreNum">—</div></div>
+          <div>
+            <span class="band thin" id="scoreBand">—</span>
+            <div class="band-note" id="bandNote"></div>
+            <div class="str-line" id="strLine"></div>
+          </div>
+        </div>
+        <div class="parts" id="parts"></div>
+        <button class="btn primary full" id="saveBtn" style="margin-top:16px">Save to radar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="radar-head"><h2>Your radar</h2><span class="hint">ranked by opportunity score — strongest niches first</span></div>
+  <div id="radar"></div>
+
+  <p class="note-line">
+    The score reads <strong>demand vs. competition</strong> from real eBay numbers — it never sees prices itself, so feed it figures from <strong>eBay Product Research</strong> (free in Seller Hub). The AI read is an informed starting guess to verify with those numbers, not a fact. General information, not financial advice.
+  </p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var LS_KEY = "demandradar.niches.v1", THEME_KEY = "demandradar.theme";
+
+  var EXAMPLES = [
+    { id: "ex1", example: true, niche: "Discontinued guitar pedals", sold90: 120, active: 60, medianPrice: 85, watchers: 6, createdAt: 5 },
+    { id: "ex2", example: true, niche: "Obsolete boiler control PCBs", sold90: 18, active: 5, medianPrice: 140, watchers: 4, createdAt: 4 },
+    { id: "ex3", example: true, niche: "Vintage film cameras (working)", sold90: 300, active: 250, medianPrice: 70, watchers: 5, createdAt: 3 },
+    { id: "ex4", example: true, niche: "Generic phone cases", sold90: 900, active: 4000, medianPrice: 6, watchers: 1, createdAt: 2 }
+  ];
+
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+  function eur0(n) { return "€" + Math.round(n).toLocaleString("en-IE"); }
+
+  function scoreNiche(s) {
+    var sold = num(s.sold90), active = num(s.active), price = num(s.medianPrice), watch = num(s.watchers);
+    var total = sold + active;
+    var str = total > 0 ? sold / total * 100 : 0;
+    var demand = clamp(str / 60 * 45, 0, 45);
+    var priceRoom = clamp((price - 5) / (80 - 5) * 25, 0, 25);
+    var liquidity = clamp(sold / 40 * 10, 0, 10);
+    var lowComp = active <= 3 ? 15 : active <= 10 ? 10 : active <= 30 ? 6 : active <= 100 ? 3 : 0;
+    var interest = clamp(watch / 8 * 5, 0, 5);
+    var score = Math.round(demand + priceRoom + liquidity + lowComp + interest);
+    return { score: score, str: str, parts: [
+      { k: "Demand (sell-through)", v: demand, max: 45 },
+      { k: "Price room", v: priceRoom, max: 25 },
+      { k: "Low competition", v: lowComp, max: 15 },
+      { k: "Liquidity (volume)", v: liquidity, max: 10 },
+      { k: "Watcher interest", v: interest, max: 5 }
+    ] };
+  }
+  function band(score) { return score >= 70 ? "strong" : score >= 45 ? "test" : "thin"; }
+  var BAND_LABEL = { strong: "Strong niche", test: "Worth testing", thin: "Thin — skip" };
+  var BAND_NOTE = {
+    strong: "Real demand, room on price, few sellers. Worth building knowledge here.",
+    test: "Some signal, but a weak spot (thin margin, or crowded). Test small.",
+    thin: "Demand too low, price too thin, or too many sellers. Walk on."
+  };
+
+  // ---------- store ----------
+  var Store = { mode: "local", db: null, niches: [], listeners: [],
+    on: function (f) { this.listeners.push(f); }, emit: function () { for (var i = 0; i < this.listeners.length; i++) this.listeners[i](); },
+    loadLocal: function () { try { var r = JSON.parse(localStorage.getItem(LS_KEY)); if (Array.isArray(r)) return r; } catch (e) {} return []; },
+    saveLocal: function () { try { localStorage.setItem(LS_KEY, JSON.stringify(this.niches)); } catch (e) {} },
+    put: function (n) { if (this.mode === "db") { this.db.doc("niches/" + n.id).set(n).catch(function () {}); } else { var i = idx(this.niches, n.id); if (i >= 0) this.niches[i] = n; else this.niches.unshift(n); this.saveLocal(); this.emit(); } },
+    remove: function (id0) { if (this.mode === "db") { this.db.doc("niches/" + id0).delete().catch(function () {}); } else { this.niches = this.niches.filter(function (x) { return x.id !== id0; }); this.saveLocal(); this.emit(); } }
+  };
+  function idx(a, id0) { for (var i = 0; i < a.length; i++) if (a[i].id === id0) return i; return -1; }
+  function displayNiches() { return Store.niches.length ? Store.niches.slice() : EXAMPLES.slice(); }
+
+  // ---------- score UI ----------
+  var S = { sold90: id("sold90"), active: id("active"), medianPrice: id("medianPrice"), watchers: id("watchers") };
+  function readScoreForm() { return { sold90: S.sold90.value, active: S.active.value, medianPrice: S.medianPrice.value, watchers: S.watchers.value }; }
+  function renderScore() {
+    var r = scoreNiche(readScoreForm()), b = band(r.score);
+    id("scoreNum").textContent = r.score;
+    id("scoreNum").style.color = b === "strong" ? "var(--good)" : b === "test" ? "var(--warn)" : "var(--bad)";
+    var bn = id("scoreBand"); bn.className = "band " + b; bn.textContent = BAND_LABEL[b];
+    id("bandNote").textContent = BAND_NOTE[b];
+    id("strLine").innerHTML = "Sell-through <strong class='mono'>" + Math.round(r.str) + "%</strong> · median <strong class='mono'>" + eur0(num(S.medianPrice.value)) + "</strong>";
+    id("parts").innerHTML = r.parts.map(function (p) {
+      return '<div class="part"><span class="pk">' + p.k + '</span><span class="ptrack"><span class="pfill" style="width:' + (p.v / p.max * 100) + '%"></span></span><span class="pv">' + Math.round(p.v) + '/' + p.max + '</span></div>';
+    }).join("");
+  }
+  Object.keys(S).forEach(function (k) { S[k].addEventListener("input", renderScore); });
+
+  id("saveBtn").addEventListener("click", function () {
+    var nm = id("niche").value.trim() || "Untitled niche";
+    var f = readScoreForm();
+    var n = { id: "n" + Date.now(), niche: nm, sold90: num(f.sold90), active: num(f.active), medianPrice: num(f.medianPrice), watchers: num(f.watchers), createdAt: Date.now() };
+    Store.put(n);
+    var b = id("saveBtn"), old = b.textContent; b.textContent = "✓ Saved"; b.disabled = true;
+    setTimeout(function () { b.textContent = old; b.disabled = false; }, 1000);
+  });
+
+  // ---------- radar ----------
+  function renderRadar() {
+    var host = id("radar");
+    var arr = displayNiches().map(function (n) { return { n: n, r: scoreNiche(n) }; });
+    arr.sort(function (a, b) { return b.r.score - a.r.score; });
+    host.innerHTML = arr.map(function (o) {
+      var b = band(o.r.score);
+      return '<div class="nrow ' + b + '"><div class="sc"><div class="n">' + o.r.score + '</div><div class="b">' + BAND_LABEL[b].split(" ")[0] + '</div></div>' +
+        '<div><div class="nm">' + esc(o.n.niche) + (o.n.example ? ' <span class="ex-tag">example</span>' : '') + '</div>' +
+        '<div class="meta mono">' + o.n.sold90 + ' sold / 90d · ' + o.n.active + ' active · ' + Math.round(o.r.str) + '% sell-through · ' + eur0(o.n.medianPrice) + ' median</div></div>' +
+        (o.n.example ? '<span></span>' : '<button class="del" data-id="' + esc(o.n.id) + '" aria-label="Delete">✕</button>') + '</div>';
+    }).join("");
+    if (usingExamples()) host.insertAdjacentHTML("afterbegin", '<div class="meta" style="font-size:12.5px;color:var(--ink-faint);background:var(--surface-2);border-radius:10px;padding:10px 14px;margin-bottom:12px">These are <span class="ex-tag">example</span> niches — note how the obsolete-parts niche scores high on tiny volume (few desperate buyers, high price, no competition), while phone cases score low despite huge volume. Save your first niche to clear them.</div>');
+    Array.prototype.forEach.call(host.querySelectorAll(".del"), function (btn) { btn.addEventListener("click", function () { Store.remove(btn.getAttribute("data-id")); }); });
+  }
+  function usingExamples() { return Store.niches.length === 0; }
+
+  // ---------- AI research (sample) ----------
+  var sampleFn = null;
+  id("briefBtn").addEventListener("click", runBrief);
+  function ebayLink(q) { return "https://www.ebay.ie/sch/i.html?_nkw=" + encodeURIComponent(q) + "&_sacat=0&LH_Sold=1&LH_Complete=1"; }
+  function runBrief() {
+    var niche = id("niche").value.trim();
+    if (!niche) { id("niche").focus(); return; }
+    if (!sampleFn) return;
+    var box = id("brief"); box.className = "brief"; box.innerHTML = '<span class="thinking"><span class="dot-a"></span>Reading the market… (20–40s)</span>';
+    var prompt = "You are a resale-market analyst for the Irish/UK secondhand market (eBay, Reverb, Vinted). Assess the niche \"" +
+      niche.replace(/"/g, "'") + "\" as a resale opportunity, thinking DEMAND-FIRST: is there unmet demand others aren't serving? Consider obsolescence/scarcity, how price-sensitive buyers are, and thin-market angles.\n\n" +
+      "Reply with ONLY this JSON:\n" +
+      '{"summary":"1-2 sentences","demandLevel":"high|medium|low","competition":"high|medium|low","obsolescence":"is scarcity a factor? one line","priceRange":"typical used price range in EUR","targets":["2-4 specific sub-niches or models to focus on"],"redFlags":["risks: identification difficulty, returns, slow turnover, etc"],"searches":["2-4 exact eBay search terms to measure real demand"]}\n\n' +
+      "Be specific and honest. This is an informed estimate to be verified with real sell-through numbers, so lean practical over optimistic.";
+    sampleFn.json(prompt, { modelTier: "default" }).then(renderBrief).catch(function (e) {
+      var m = e && e.code === "rate_limited" ? "Too many requests — wait a minute." : e && e.code === "not_granted" ? "Claude access wasn't granted here." : "Couldn't read that niche — try rephrasing, or go by the numbers.";
+      box.innerHTML = '<span class="err">' + esc(m) + '</span>';
+      if (e && e.code === "not_granted") { sampleFn = null; id("briefUnavail").hidden = false; }
+    });
+  }
+  function renderBrief(d) {
+    d = d || {};
+    function lvl(v) { v = (v || "").toLowerCase(); return ["high", "medium", "low"].indexOf(v) < 0 ? "low" : v; }
+    var dl = lvl(d.demandLevel), cl = lvl(d.competition);
+    var targets = Array.isArray(d.targets) ? d.targets.filter(Boolean) : [];
+    var flags = Array.isArray(d.redFlags) ? d.redFlags.filter(Boolean) : [];
+    var searches = Array.isArray(d.searches) ? d.searches.filter(Boolean) : [];
+    var html = '<h3>' + esc(id("niche").value.trim()) + '</h3>' +
+      '<div class="lv"><span class="lvchip lv-' + dl + '"><span class="t">demand</span> ' + dl + '</span>' +
+      '<span class="lvchip lv-' + (cl === "high" ? "low" : cl === "low" ? "high" : "medium") + '"><span class="t">competition</span> ' + cl + '</span></div>';
+    if (d.summary) html += '<p>' + esc(d.summary) + '</p>';
+    if (d.obsolescence) html += '<p><strong>Scarcity:</strong> ' + esc(d.obsolescence) + '</p>';
+    if (d.priceRange) html += '<p><strong>Typical price:</strong> ' + esc(d.priceRange) + '</p>';
+    if (targets.length) html += '<div class="lbl">Where to focus</div><ul>' + targets.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ul>';
+    if (flags.length) html += '<div class="lbl">Watch out for</div><ul class="flags">' + flags.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ul>';
+    if (searches.length) html += '<div class="lbl">Measure it — run these on eBay sold</div><div class="searches">' + searches.map(function (q) { return '<a href="' + esc(ebayLink(q)) + '" target="_blank" rel="noopener">' + esc(q) + ' ↗</a>'; }).join("") + '</div>';
+    html += '<p class="disclaim">AI estimate — confirm with the real sell-through numbers on the right before trusting it.</p>';
+    id("brief").innerHTML = html;
+  }
+
+  // ---------- theme ----------
+  (function () {
+    var saved = null; try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (saved) document.documentElement.setAttribute("data-theme", saved);
+    function sync() { var c = document.documentElement.getAttribute("data-theme"); var dk = c ? c === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; id("themeBtn").textContent = dk ? "☀ Light" : "☾ Dark"; }
+    sync();
+    id("themeBtn").addEventListener("click", function () { var c = document.documentElement.getAttribute("data-theme"); var dk = c ? c === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; var nx = dk ? "light" : "dark"; document.documentElement.setAttribute("data-theme", nx); try { localStorage.setItem(THEME_KEY, nx); } catch (e) {} sync(); });
+  })();
+
+  function id(x) { return document.getElementById(x); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  Store.on(renderRadar);
+  renderScore(); renderRadar();
+
+  if (window.claude && claude.use) {
+    claude.use("sample").then(function (s) { if (s) sampleFn = s; else id("briefUnavail").hidden = false; }).catch(function () { id("briefUnavail").hidden = false; });
+    claude.use("db").then(function (db) {
+      if (!db) return;
+      Store.mode = "db"; Store.db = db;
+      id("storeLabel").textContent = "synced"; id("storeChip").className = "store-chip synced";
+      db.collection("niches").onSnapshot(function (snap) { var a = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; a.push(v); } }); Store.niches = a; Store.emit(); }, function () {});
+    }).catch(function () {});
+  } else { id("briefUnavail").hidden = false; }
+
+  Store.niches = Store.loadLocal(); renderRadar();
+})();
+</script>
