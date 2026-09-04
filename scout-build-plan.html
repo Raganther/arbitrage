@@ -1,0 +1,370 @@
+<title>Scout Build Plan</title>
+<meta name="description" content="A phased, honest roadmap for building an eBay arbitrage-scouting system around the Flip Check valuation engine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #EDF0EB;
+    --surface: #FAFBF8;
+    --surface-2: #F1F3ED;
+    --ink: #19211D;
+    --ink-muted: #58635B;
+    --ink-faint: #869089;
+    --hair: #DCE1D7;
+    --hair-strong: #CBD1C4;
+    --accent: #0E6B4F;
+    --accent-ink: #0A5540;
+    --copper: #A9682F;
+    --slate: #3F6B7A;
+    --done: #14764E;      --done-bg: #E3EFE5;
+    --now: #0E6B4F;       --now-bg: #E1EDE7;
+    --next: #9C6A10;      --next-bg: #F2E9D2;
+    --later: #3F6B7A;     --later-bg: #E2EBEE;
+    --bad: #A9433A;       --bad-bg: #F1E1DD;
+    --shadow: 0 1px 2px rgba(25,33,29,.05), 0 10px 30px -18px rgba(25,33,29,.3);
+    --focus: #0E6B4F;
+    color-scheme: light;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #10140E; --surface: #191E16; --surface-2: #222820;
+      --ink: #EBEEE4; --ink-muted: #A5AC9D; --ink-faint: #737B6E;
+      --hair: #2A3126; --hair-strong: #394031;
+      --accent: #45B78B; --accent-ink: #6ECBA6; --copper: #D0965C; --slate: #7FB0C0;
+      --done: #4FB585; --done-bg: #1B2C22;
+      --now: #45B78B; --now-bg: #1B2A23;
+      --next: #D2A44A; --next-bg: #2E2814;
+      --later: #7FB0C0; --later-bg: #1B2830;
+      --bad: #D98A7E; --bad-bg: #33201C;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+      --focus: #45B78B;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #10140E; --surface: #191E16; --surface-2: #222820;
+    --ink: #EBEEE4; --ink-muted: #A5AC9D; --ink-faint: #737B6E;
+    --hair: #2A3126; --hair-strong: #394031;
+    --accent: #45B78B; --accent-ink: #6ECBA6; --copper: #D0965C; --slate: #7FB0C0;
+    --done: #4FB585; --done-bg: #1B2C22;
+    --now: #45B78B; --now-bg: #1B2A23;
+    --next: #D2A44A; --next-bg: #2E2814;
+    --later: #7FB0C0; --later-bg: #1B2830;
+    --bad: #D98A7E; --bad-bg: #33201C;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+    --focus: #45B78B;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+    font-size: 15.5px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 30px clamp(16px, 4vw, 40px) 90px; }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--copper); font-weight: 500; }
+  h1 { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: clamp(30px, 5.4vw, 46px); line-height: 1.04; letter-spacing: -.015em; margin: 8px 0 0; text-wrap: balance; }
+  .lede { color: var(--ink-muted); font-size: 17px; max-width: 62ch; margin: 14px 0 0; }
+  h2 { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 25px; letter-spacing: -.01em; margin: 0 0 4px; }
+  .section { margin-top: 46px; }
+  .section > .sublede { color: var(--ink-muted); max-width: 64ch; margin: 0 0 20px; }
+  .section-eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 6px; }
+
+  /* status strip */
+  .status-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--hair-strong); background: var(--surface); }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.done { background: var(--done); } .dot.now { background: var(--now); }
+  .dot.next { background: var(--next); } .dot.later { background: var(--later); }
+
+  /* theme toggle */
+  .theme-btn { position: absolute; top: 26px; right: clamp(16px,4vw,40px); border: 1px solid var(--hair-strong); background: var(--surface); color: var(--ink-muted); border-radius: 999px; padding: 6px 13px; font: inherit; font-size: 13px; cursor: pointer; }
+  .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* loop diagram */
+  .loop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 620px) { .loop { grid-template-columns: repeat(2, 1fr); } }
+  .stage { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 13px 14px; position: relative; box-shadow: var(--shadow); }
+  .stage .n { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-faint); }
+  .stage .t { font-weight: 600; font-size: 15px; margin: 2px 0 3px; }
+  .stage .d { font-size: 12.5px; color: var(--ink-muted); line-height: 1.4; }
+  .stage .tag { margin-top: 9px; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; font-weight: 500; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+  .tag.done { background: var(--done-bg); color: var(--done); }
+  .tag.now { background: var(--now-bg); color: var(--now); }
+  .tag.next { background: var(--next-bg); color: var(--next); }
+  .tag.later { background: var(--later-bg); color: var(--later); }
+  .stage.is-done { border-color: color-mix(in srgb, var(--done) 40%, transparent); }
+  .loop-foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--ink-muted); }
+  .loop-foot .arc { color: var(--copper); font-weight: 600; }
+
+  /* table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--hair); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  th { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; background: var(--surface-2); }
+  tr:last-child td { border-bottom: none; }
+  td .src { font-weight: 600; }
+  .status-tag { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+  .status-tag.open { background: var(--done-bg); color: var(--done); }
+  .status-tag.gated { background: var(--next-bg); color: var(--next); }
+  .status-tag.closed { background: var(--bad-bg); color: var(--bad); }
+  .status-tag.paid { background: var(--later-bg); color: var(--later); }
+
+  /* phase cards */
+  .phase { background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; padding: 22px 24px; box-shadow: var(--shadow); margin-bottom: 16px; border-left: 4px solid var(--hair-strong); }
+  .phase.p-done { border-left-color: var(--done); }
+  .phase.p-now { border-left-color: var(--now); }
+  .phase.p-next { border-left-color: var(--next); }
+  .phase.p-later { border-left-color: var(--later); }
+  .phase-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .phase-head .pn { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-faint); font-weight: 500; }
+  .phase-head h3 { font-family: "Fraunces", serif; font-weight: 600; font-size: 21px; letter-spacing: -.01em; margin: 0; flex: 1; min-width: 200px; }
+  .phase-head .st { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 4px 10px; border-radius: 7px; }
+  .st.done { background: var(--done-bg); color: var(--done); }
+  .st.now { background: var(--now-bg); color: var(--now); }
+  .st.next { background: var(--next-bg); color: var(--next); }
+  .st.later { background: var(--later-bg); color: var(--later); }
+  .phase .goal { color: var(--ink-muted); margin: 2px 0 16px; max-width: 66ch; }
+  .phase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 620px) { .phase-grid { grid-template-columns: 1fr; gap: 12px; } }
+  .pg h4 { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--copper); margin: 0 0 6px; font-weight: 500; }
+  .pg ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+  .pg li { font-size: 13.5px; color: var(--ink); padding-left: 15px; position: relative; line-height: 1.4; }
+  .pg li::before { content: ""; position: absolute; left: 0; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .pg p { font-size: 13.5px; color: var(--ink-muted); margin: 0; }
+  .phase-foot { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--hair); display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; }
+  .phase-foot .fk { font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); }
+  .phase-foot .fv { font-weight: 600; }
+
+  /* generic cards row */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 620px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 16px 18px; }
+  .card h4 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--ink-muted); }
+  .card .ic { font-size: 15px; }
+
+  /* run steps */
+  .run { display: grid; gap: 10px; }
+  .run-row { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: start; background: var(--surface); border: 1px solid var(--hair); border-radius: 10px; padding: 13px 16px; }
+  @media (max-width: 620px) { .run-row { grid-template-columns: 1fr; gap: 3px; } }
+  .run-row .rk { font-weight: 600; font-size: 14px; }
+  .run-row .rk .sub { display: block; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); font-weight: 400; margin-top: 2px; }
+  .run-row .rv { font-size: 13.5px; color: var(--ink-muted); }
+
+  /* risks */
+  .risk { border-left: 3px solid var(--bad); background: var(--surface); border-radius: 0 10px 10px 0; padding: 12px 16px; margin-bottom: 10px; border-top: 1px solid var(--hair); border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); }
+  .risk .rt { font-weight: 600; font-size: 14.5px; }
+  .risk .rd { font-size: 13.5px; color: var(--ink-muted); margin-top: 2px; }
+
+  /* decisions */
+  .decide { background: var(--now-bg); border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent); border-radius: 16px; padding: 24px; }
+  .decide h2 { margin-bottom: 8px; }
+  .fork { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  @media (max-width: 620px) { .fork { grid-template-columns: 1fr; } }
+  .fork .opt { background: var(--surface); border: 1px solid var(--hair-strong); border-radius: 12px; padding: 16px 18px; }
+  .fork .opt .lab { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--copper); }
+  .fork .opt h4 { margin: 4px 0 6px; font-size: 16px; }
+  .fork .opt p { margin: 0; font-size: 13.5px; color: var(--ink-muted); }
+  .fork .opt.rec { border-color: var(--accent); }
+  .rec-badge { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); background: var(--now-bg); border: 1px solid var(--accent); border-radius: 5px; padding: 1px 6px; margin-left: 6px; }
+  .decide .close { margin: 18px 0 0; font-size: 14px; color: var(--ink-muted); }
+
+  a { color: var(--accent); }
+  .foot-note { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--hair); font-size: 12.5px; color: var(--ink-faint); line-height: 1.6; }
+  strong { font-weight: 600; }
+</style>
+
+<button class="theme-btn" id="themeBtn">☾ Dark</button>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Arbitrage project · roadmap v1</span>
+    <h1>Scout: a plan to find and track flips on eBay</h1>
+    <p class="lede">An honest, phased path from the manual valuation tool you have today to a system that scans a niche, surfaces underpriced listings, and checks its own estimates against what things actually sell for. Built in stages that each stand on their own — nothing here depends on a promise that might not land.</p>
+
+    <div class="status-strip">
+      <span class="pill"><span class="dot done"></span>Phase 0 · Valuation engine — shipped</span>
+      <span class="pill"><span class="dot now"></span>Phase 1 · Tracking &amp; learning — next up</span>
+      <span class="pill"><span class="dot next"></span>Phase 2 · Auto-discovery</span>
+      <span class="pill"><span class="dot later"></span>Phase 3 · Widen &amp; automate</span>
+    </div>
+  </header>
+
+  <!-- THE LOOP -->
+  <section class="section">
+    <span class="section-eyebrow">The concept · one repeating loop</span>
+    <h2>What the whole system does</h2>
+    <p class="sublede">Every arbitrage setup is the same six-stage cycle. The colour of each stage is how far along we are building it.</p>
+    <div class="loop">
+      <div class="stage"><div class="n">01</div><div class="t">Discover</div><div class="d">Pull in real listings for a chosen niche automatically.</div><span class="tag next">Phase 2</span></div>
+      <div class="stage is-done"><div class="n">02</div><div class="t">Identify</div><div class="d">Work out what each item actually is — the bad-title / good-item moment.</div><span class="tag done">Built · Phase 0</span></div>
+      <div class="stage is-done"><div class="n">03</div><div class="t">Value</div><div class="d">Estimate resale from sold comps; compute margin after fees + postage.</div><span class="tag done">Built · Phase 0</span></div>
+      <div class="stage"><div class="n">04</div><div class="t">Track</div><div class="d">Save opportunities to a board you browse and rank.</div><span class="tag now">Phase 1</span></div>
+      <div class="stage"><div class="n">05</div><div class="t">Watch outcome</div><div class="d">Follow each item until it ends; record what it sold for.</div><span class="tag now">Phase 1</span></div>
+      <div class="stage"><div class="n">06</div><div class="t">Learn</div><div class="d">Compare estimate to actual; find the niches your instinct is reliable in.</div><span class="tag now">Phase 1</span></div>
+    </div>
+    <div class="loop-foot"><span class="arc">↻</span> Stage 06 feeds back into stage 03 — the system gets better at valuing the more outcomes it has seen.</div>
+  </section>
+
+  <!-- DATA REALITY -->
+  <section class="section">
+    <span class="section-eyebrow">Ground truth · read this before anything else</span>
+    <h2>The data you can and can't get</h2>
+    <p class="sublede">The plan is shaped entirely by this table. The valuable data is the most locked-down, so we design around the gaps instead of pretending they aren't there.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Data you want</th><th>Where it lives</th><th>Access</th><th>What Scout does about it</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="src">Active listings</span><br>what's for sale now</td>
+            <td>eBay <strong>Browse API</strong><br>(the old Finding API is dead)</td>
+            <td><span class="status-tag gated">Approval-gated</span></td>
+            <td>Primary discovery source — <em>if</em> eBay grants access. Built behind a swappable adapter so we're never blocked waiting on it.</td>
+          </tr>
+          <tr>
+            <td><span class="src">Sold prices</span><br>what it actually sold for</td>
+            <td>eBay <strong>Marketplace Insights API</strong></td>
+            <td><span class="status-tag closed">Closed</span></td>
+            <td>Not available to individuals. Resale value comes from your confirmed sold-comp checks and, over time, your own recorded outcomes.</td>
+          </tr>
+          <tr>
+            <td><span class="src">Did it sell?</span><br>listing still live / ended</td>
+            <td>Browse API item lookup</td>
+            <td><span class="status-tag gated">Same as Browse</span></td>
+            <td>Poll each watched item; when it ends, flag it and prompt you for the final price. Reliable for status, not for auto-capturing the price.</td>
+          </tr>
+          <tr>
+            <td><span class="src">Local bargains</span><br>Adverts, DoneDeal, Marketplace</td>
+            <td>No public API; bot-hostile</td>
+            <td><span class="status-tag closed">Off-limits</span></td>
+            <td>Deliberately out of scope until much later. This is where the best deals are and the hardest to reach — a human-in-the-loop job, not a scraper.</td>
+          </tr>
+          <tr>
+            <td><span class="src">Fallback feed</span><br>listings + ~90-day sold</td>
+            <td>Third-party (SoldComps, Apify)</td>
+            <td><span class="status-tag paid">Paid, open signup</span></td>
+            <td>If eBay's own access never comes through, drop one of these into the same adapter. ~$2 per 1,000 results; ToS burden sits with us.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PHASES -->
+  <section class="section">
+    <span class="section-eyebrow">The build · four phases, in dependency order</span>
+    <h2>How we get there</h2>
+    <p class="sublede">Each phase ships something usable on its own. You could stop after any one of them and still have gained something real.</p>
+
+    <div class="phase p-done">
+      <div class="phase-head"><span class="pn">Phase 0</span><h3>The valuation engine</h3><span class="st done">Shipped</span></div>
+      <p class="goal">The brain of the system: name an item, rough out its resale, and decide buy / skip after fees. Built first because a scanner is worthless until something can judge what it finds.</p>
+      <div class="phase-grid">
+        <div class="pg"><h4>You get</h4><ul><li>Flip Check — live now</li><li>AI item identification</li><li>Ireland fee &amp; margin maths</li><li>BUY / MAYBE / SKIP verdict</li></ul></div>
+        <div class="pg"><h4>Built with</h4><ul><li>Single-page artifact</li><li><code>sample</code> capability (Claude)</li><li>Local browser storage</li></ul></div>
+        <div class="pg"><h4>Proves</h4><p>That the identify → value → decide judgement can be automated well enough to trust the numbers.</p></div>
+      </div>
+      <div class="phase-foot"><span><span class="fk">Effort</span> <span class="fv">Done</span></span><span><span class="fk">Cost</span> <span class="fv">€0</span></span><span><span class="fk">Data access needed</span> <span class="fv">None</span></span></div>
+    </div>
+
+    <div class="phase p-now">
+      <div class="phase-head"><span class="pn">Phase 1</span><h3>Tracking &amp; the learning loop</h3><span class="st now">Recommended next</span></div>
+      <p class="goal">Turn the flat ledger into a real tracker that follows finds to their outcome and scores your estimates — so you learn, with data, which niches your instinct is actually reliable in. No scanning, no scraping, breaks no rules, highest value per hour.</p>
+      <div class="phase-grid">
+        <div class="pg"><h4>You get</h4><ul><li>Opportunity board: watching / bought / sold</li><li>Record the real sold price</li><li>Estimate-vs-actual accuracy</li><li>Accuracy broken down by category</li><li>Running profit &amp; hit-rate</li></ul></div>
+        <div class="pg"><h4>Built with</h4><ul><li>Evolve Flip Check</li><li><code>db</code> capability for durable, cross-device storage</li><li>Simple accuracy charts</li></ul></div>
+        <div class="pg"><h4>Proves</h4><p>The feedback half of your idea — that the system can check itself and get measurably better at valuing.</p></div>
+      </div>
+      <div class="phase-foot"><span><span class="fk">Effort</span> <span class="fv">1–2 sessions</span></span><span><span class="fk">Cost</span> <span class="fv">€0</span></span><span><span class="fk">Data access needed</span> <span class="fv">None</span></span></div>
+    </div>
+
+    <div class="phase p-next">
+      <div class="phase-head"><span class="pn">Phase 2</span><h3>Auto-discovery for one niche</h3><span class="st next">After Phase 1</span></div>
+      <p class="goal">Wire the top of the loop. On a schedule, pull real active listings for a handful of saved searches in one niche, run each through the valuation engine, and drop the underpriced ones onto your board — ranked, with reasoning and a sold-comp link.</p>
+      <div class="phase-grid">
+        <div class="pg"><h4>You get</h4><ul><li>Saved searches for your niche</li><li>Auto-populated opportunity feed</li><li>AI triage against your value model</li><li>Only the good ones surface</li><li>You still decide every buy</li></ul></div>
+        <div class="pg"><h4>Built with</h4><ul><li>Data adapter: sample → live</li><li>eBay Browse API <em>or</em> a paid feed</li><li>Scheduled refresh (Routines)</li></ul></div>
+        <div class="pg"><h4>Proves</h4><p>Discovery can run itself — the full concept, end to end, minus "everywhere."</p></div>
+      </div>
+      <div class="phase-foot"><span><span class="fk">Effort</span> <span class="fv">2–4 sessions</span></span><span><span class="fk">Cost</span> <span class="fv">€0–low</span></span><span><span class="fk">Data access needed</span> <span class="fv">Browse API or third-party key</span></span></div>
+    </div>
+
+    <div class="phase p-later">
+      <div class="phase-head"><span class="pn">Phase 3</span><h3>Widen &amp; automate</h3><span class="st later">Later</span></div>
+      <p class="goal">Only once the accuracy data proves you can trust the estimates in a niche do you add more of them — and tighten the outcome loop. This is the north star ("any domain, anywhere"), approached one proven niche at a time, never as a starting point.</p>
+      <div class="phase-grid">
+        <div class="pg"><h4>You get</h4><ul><li>More niches, added on evidence</li><li>Better final-price capture</li><li>Alerts for high-ROI finds</li><li>Optional: assisted local sourcing</li></ul></div>
+        <div class="pg"><h4>Built with</h4><ul><li>Everything from Phases 1–2</li><li>Push notifications</li><li>Human-in-the-loop for no-API sites</li></ul></div>
+        <div class="pg"><h4>Proves</h4><p>It scales — without drowning you in listings you can't value.</p></div>
+      </div>
+      <div class="phase-foot"><span><span class="fk">Effort</span> <span class="fv">Ongoing</span></span><span><span class="fk">Cost</span> <span class="fv">Scales with use</span></span><span><span class="fk">Data access needed</span> <span class="fv">Per source</span></span></div>
+    </div>
+  </section>
+
+  <!-- HOW IT RUNS -->
+  <section class="section">
+    <span class="section-eyebrow">Under the hood · plain english</span>
+    <h2>How the pieces actually run</h2>
+    <p class="sublede">Worth understanding one honest constraint: there's no always-on server humming in the background here. Everything is arranged around that.</p>
+    <div class="run">
+      <div class="run-row"><div class="rk">The app<span class="sub">artifact page</span></div><div class="rv">A single web page you open — no install, works on your phone in a charity shop and on your laptop at home. This is Flip Check, growing into Scout.</div></div>
+      <div class="run-row"><div class="rk">The memory<span class="sub">db capability</span></div><div class="rv">Your finds, estimates and outcomes stored durably and synced across devices — the record the learning loop reads back from.</div></div>
+      <div class="run-row"><div class="rk">The judgement<span class="sub">sample capability</span></div><div class="rv">Item identification and valuation run on Claude, paid from your own usage, triggered when you ask — not in a constant loop.</div></div>
+      <div class="run-row"><div class="rk">The scanner<span class="sub">scheduled trigger</span></div><div class="rv">A task that wakes on a schedule, pulls fresh listings through the data adapter, values them, and updates your board — then sleeps. This is how "automatic" happens without a server.</div></div>
+      <div class="run-row"><div class="rk">The source<span class="sub">swappable adapter</span></div><div class="rv">One clean seam where the listing data comes from. Sample data today; eBay Browse API or a paid feed slotted in behind it later, with no rebuild.</div></div>
+    </div>
+  </section>
+
+  <!-- RISKS -->
+  <section class="section">
+    <span class="section-eyebrow">Straight talk · what could go wrong</span>
+    <h2>Risks worth naming now</h2>
+    <div class="risk"><div class="rt">eBay may never grant live API access</div><div class="rd">Mitigated by the adapter: if Browse access doesn't come, a paid third-party feed drops into the same slot. The build never stalls on eBay's decision.</div></div>
+    <div class="risk"><div class="rt">Final sold prices can't be captured automatically</div><div class="rd">The closed data. Phase 1 handles it the honest way — you confirm the price, the system learns from it. Not a blocker, just manual.</div></div>
+    <div class="risk"><div class="rt">"Scan everything, everywhere" fights your only edge</div><div class="rd">Valuing a category you don't know is guessing. The niche-first design is the guardrail; Phase 3 widens only on proven accuracy.</div></div>
+    <div class="risk"><div class="rt">Browser-bot scraping as a shortcut</div><div class="rd">Tempting because it sidesteps the API wall — but it's fragile, blockable and against ToS. Kept out of the plan on purpose; APIs first, always.</div></div>
+  </section>
+
+  <!-- DECISIONS -->
+  <section class="section">
+    <div class="decide">
+      <span class="section-eyebrow">Your call · the two forks that set the next build</span>
+      <h2>What the project needs from you</h2>
+      <p class="sublede" style="margin-bottom:0">Neither has to be decided this second — Phase 1 needs no data access at all, so we can start there while you weigh these.</p>
+      <div class="fork">
+        <div class="opt rec"><div class="lab">Fork 1 · Data path <span class="rec-badge">Recommended</span></div><h4>Working loop now, live data later</h4><p>Build the full flow with sample listings behind the adapter; see it work today; slot live eBay data in when access is sorted. The alternative — set up a free eBay developer account first — is higher payoff but gated on eBay's approval timeline.</p></div>
+        <div class="opt"><div class="lab">Fork 2 · Niche</div><h4>Pick one to focus</h4><p>Music gear (your strongest edge, values well), books (lowest capital, clean ISBN identification), or vintage clothing (good margins, noisier to value). A tight niche is what makes the estimates trustworthy.</p></div>
+      </div>
+      <p class="close"><strong>My recommendation:</strong> start <strong>Phase 1</strong> now regardless of the forks — it's the highest-value, lowest-risk piece and needs nothing from eBay. Decide the forks before Phase 2.</p>
+    </div>
+  </section>
+
+  <p class="foot-note">
+    General information, not financial or tax advice. Reselling income can be taxable in Ireland once it's regular — worth checking as it grows. Data-access notes reflect the state of eBay's APIs as of the 2026 research in this project; verify current terms before relying on any source.
+  </p>
+</div>
+
+<script>
+  (function () {
+    var btn = document.getElementById("themeBtn"), root = document.documentElement, KEY = "scoutplan.theme";
+    var saved = null; try { saved = localStorage.getItem(KEY); } catch (e) {}
+    if (saved) root.setAttribute("data-theme", saved);
+    function sync() {
+      var cur = root.getAttribute("data-theme");
+      var dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      btn.textContent = dark ? "☀ Light" : "☾ Dark";
+    }
+    sync();
+    btn.addEventListener("click", function () {
+      var cur = root.getAttribute("data-theme");
+      var dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      var next = dark ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+      sync();
+    });
+  })();
+</script>
