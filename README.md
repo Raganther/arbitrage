@@ -8,11 +8,17 @@ few-hours-a-week, ROI-driven start in Ireland.
 
 **[`scout.html`](./scout.html)** — the full tool: assess, track, and learn.
 
-Three tabs:
+Four tabs:
 
 - **Assess** — paste a listing, let Scout identify it and rough out a resale
   range, run the Ireland fee/margin maths for a BUY/MAYBE/SKIP verdict, then add
   the good ones to your board.
+- **Discover** — auto-sourced opportunities for a chosen niche, ranked by ROI,
+  each with a verdict, reasoning and eBay sold/live links; add the good ones
+  straight to the board or dismiss them. A page can't call eBay directly, so a
+  server-side **scanner** writes finds into the shared store and Discover reads
+  them live (see [`SCANNER.md`](./SCANNER.md)). Ships with sample candidates so
+  the flow works before the scanner is wired.
 - **Board** — every find as a card you move through its lifecycle: watching →
   bought → listed → sold (or passed). When you mark something sold, you record
   what it actually went for.

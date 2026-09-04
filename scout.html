@@ -200,6 +200,41 @@
   .cat-val .big { font-family: "IBM Plex Mono", monospace; font-size: 14px; font-weight: 600; }
   .cat-val .rel { font-size: 10.5px; color: var(--ink-faint); display: block; }
 
+  /* discover */
+  .disc-bar { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .disc-niche select { width: auto; min-width: 180px; }
+  .qwrap { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 13px 16px; margin-bottom: 14px; }
+  .qlabel { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-muted); font-weight: 600; margin-bottom: 9px; }
+  .queries { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+  .qchip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; background: var(--surface-2); border: 1px solid var(--hair-strong); border-radius: 999px; padding: 5px 8px 5px 12px; }
+  .qchip .qx { cursor: pointer; color: var(--ink-faint); font-size: 14px; line-height: 1; border: none; background: none; padding: 0 2px; }
+  .qchip .qx:hover { color: var(--bad); }
+  .qadd { display: flex; gap: 8px; }
+  .qadd input { flex: 1; }
+  .disc-note { font-size: 12.5px; color: var(--ink-muted); background: var(--surface-2); border: 1px dashed var(--hair-strong); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; line-height: 1.5; }
+  .disc-note.live { border-style: solid; border-color: color-mix(in srgb, var(--good) 40%, transparent); background: var(--good-bg); color: var(--ink); }
+  .cand { background: var(--surface); border: 1px solid var(--hair); border-radius: 13px; padding: 14px 16px; margin-bottom: 11px; box-shadow: var(--shadow); display: grid; grid-template-columns: 50px 1fr auto; gap: 14px; align-items: center; }
+  @media (max-width: 700px) { .cand { grid-template-columns: 44px 1fr; } .cand-right { grid-column: 1 / -1; flex-direction: row !important; align-items: center !important; justify-content: space-between; } }
+  .cand-rank { text-align: center; }
+  .cand-rank .badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 7px 0; border-radius: 8px; display: block; }
+  .cand-rank .badge.buy { background: var(--good-bg); color: var(--good); } .cand-rank .badge.maybe { background: var(--warn-bg); color: var(--warn); } .cand-rank .badge.skip { background: var(--bad-bg); color: var(--bad); }
+  .cand-main .ct { font-weight: 600; font-size: 14.5px; }
+  .cand-main .cm { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+  .cand-main .cm .mono { color: var(--ink); }
+  .cand-main .cr { font-size: 12.5px; color: var(--ink-muted); margin-top: 5px; font-style: italic; }
+  .cand-main .clinks { margin-top: 7px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .cand-main .clinks a { font-size: 12px; color: var(--accent); text-decoration: none; border: 1px solid var(--hair-strong); border-radius: 7px; padding: 3px 9px; }
+  .cand-main .clinks a:hover { border-color: var(--accent); }
+  .cand-right { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
+  .cand-fig { text-align: right; }
+  .cand-fig .p { font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cand-fig .p.pos { color: var(--good); } .cand-fig .p.neg { color: var(--bad); }
+  .cand-fig .roi { font-size: 11px; color: var(--ink-faint); }
+  .cand-actions { display: flex; gap: 6px; }
+  .cand-actions .btn { padding: 7px 12px; font-size: 13px; }
+  .cand.added { opacity: .5; }
+  .cand-added { font-size: 12.5px; color: var(--good); font-weight: 600; }
+
   .note-line { font-size: 12px; color: var(--ink-faint); margin-top: 22px; text-align: center; line-height: 1.6; }
   .note-line a { color: var(--accent); }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -219,6 +254,7 @@
 
   <div class="tabs" role="tablist" aria-label="Views">
     <button class="tab" role="tab" id="tab-assess" aria-controls="panel-assess" aria-selected="true">Assess</button>
+    <button class="tab" role="tab" id="tab-discover" aria-controls="panel-discover" aria-selected="false">Discover <span class="count" id="discCount">0</span></button>
     <button class="tab" role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false">Board <span class="count" id="boardCount">0</span></button>
     <button class="tab" role="tab" id="tab-learn" aria-controls="panel-learn" aria-selected="false">Learning</button>
   </div>
@@ -285,6 +321,24 @@
     </div>
   </section>
 
+  <!-- DISCOVER -->
+  <section class="panel" id="panel-discover" role="tabpanel" aria-labelledby="tab-discover" hidden>
+    <div class="disc-bar">
+      <div class="disc-niche">
+        <label class="fl" for="nicheSel">Niche the scanner watches</label>
+        <select id="nicheSel"><option value="music-gear">Music gear</option><option value="books">Books</option><option value="vintage-clothing">Vintage clothing</option><option value="electronics">Electronics</option></select>
+      </div>
+      <button class="btn primary" id="scanBtn">⟳ Run a scan</button>
+    </div>
+    <div class="qwrap">
+      <div class="qlabel">Saved searches</div>
+      <div class="queries" id="queries"></div>
+      <form class="qadd" id="qadd"><input type="text" id="qinput" placeholder="add a search term…" aria-label="Add a saved search"><button class="btn ghost" type="submit">Add</button></form>
+    </div>
+    <div class="disc-note" id="discNote"></div>
+    <div id="candidates"></div>
+  </section>
+
   <!-- BOARD -->
   <section class="panel" id="panel-board" role="tabpanel" aria-labelledby="tab-board" hidden>
     <div class="filters" id="filters"></div>
@@ -337,7 +391,7 @@
 
   // ---------- store (db with localStorage fallback) ----------
   var Store = {
-    mode: "local", db: null, finds: [], listeners: [],
+    mode: "local", db: null, finds: [], discoveries: [], listeners: [],
     onChange: function (fn) { this.listeners.push(fn); },
     emit: function () { for (var i = 0; i < this.listeners.length; i++) this.listeners[i](); },
     setLocal: function (arr) { this.finds = arr; try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch (e) {} this.emit(); },
@@ -577,14 +631,151 @@
       '<div class="learn-body">' + catRows + '</div></div>';
   }
 
+  // ---------- DISCOVER ----------
+  var DISC_KEY = "scout.discover.v1";
+  var NICHE_QUERIES = {
+    "music-gear": ["guitar pedal", "audio interface", "condenser mic", "studio monitor"],
+    "books": ["vintage penguin lot", "textbook current edition", "out of print hardback"],
+    "vintage-clothing": ["vintage levis 501", "carhartt jacket", "wool overcoat"],
+    "electronics": ["retro headphones", "film camera", "hi-fi amplifier"]
+  };
+  var POSTAGE_DEF = { "music-gear": 8, "books": 4.5, "vintage-clothing": 6, "electronics": 8 };
+  var SAMPLE_CANDIDATES = {
+    "music-gear": [
+      { t: "TC Electronic Hall of Fame 2 reverb pedal, boxed", price: 34, est: 72, cond: "Used – fully working", q: "TC Electronic Hall of Fame 2", r: "Priced like a generic pedal; the HOF2 is a staple that holds its value." },
+      { t: "Boss RC-1 Loop Station", price: 52, est: 95, cond: "Used – good", q: "Boss RC-1 Loop Station", r: "Popular looper with steady demand on Reverb." },
+      { t: "Shure SM58 dynamic mic (no cable)", price: 46, est: 78, cond: "Used", q: "Shure SM58", r: "Industry-standard mic; a missing cable barely dents value." },
+      { t: "Korg Volca Beats drum machine", price: 62, est: 96, cond: "Used – boxed", q: "Korg Volca Beats", r: "Compact groovebox with a keen used market." },
+      { t: "Behringer 2-channel mixer", price: 24, est: 32, cond: "Used", q: "Behringer Xenyx mixer", r: "Low ceiling — postage and fees eat most of the gap." },
+      { t: "Generic guitar strap", price: 7, est: 10, cond: "Used", q: "guitar strap", r: "Too cheap to be worth posting." }
+    ],
+    "books": [
+      { t: "Vintage Penguin paperbacks, lot of 12", price: 8, est: 34, cond: "Used – readable", q: "vintage penguin paperback lot", r: "Bundles of desirable spines sell to collectors and stylists." },
+      { t: "Engineering textbook, current edition", price: 12, est: 48, cond: "Very good", q: "engineering textbook current edition", r: "Current-edition textbooks command strong prices." },
+      { t: "Common airport thriller paperback", price: 3, est: 5, cond: "Used", q: "paperback thriller", r: "Postage alone kills it." }
+    ],
+    "vintage-clothing": [
+      { t: "Vintage Levi's 501, dark wash 34x32", price: 14, est: 45, cond: "Used – good", q: "vintage levis 501", r: "Sized vintage 501s move quickly." },
+      { t: "Carhartt duck jacket, tan", price: 22, est: 60, cond: "Worn – solid", q: "carhartt detroit jacket", r: "Workwear brand with a strong resale following." },
+      { t: "Unbranded fleece", price: 6, est: 9, cond: "Used", q: "fleece", r: "No brand, no margin." }
+    ],
+    "electronics": [
+      { t: "Sony MDR-V6 studio headphones", price: 24, est: 68, cond: "Used – working", q: "Sony MDR-V6", r: "Cult-classic cans with consistent sold prices." },
+      { t: "Canon AE-1 film camera, body only", price: 40, est: 95, cond: "Untested", q: "Canon AE-1", r: "Film revival keeps these in demand — verify it fires first." },
+      { t: "Generic phone charger", price: 4, est: 6, cond: "Used", q: "phone charger", r: "Not worth the packaging." }
+    ]
+  };
+
+  var disc = { niche: "music-gear", queries: {}, dismissed: {}, added: {} };
+  (function loadDisc() { try { var r = JSON.parse(localStorage.getItem(DISC_KEY)); if (r) disc = Object.assign(disc, r); } catch (e) {} })();
+  function saveDisc() { try { localStorage.setItem(DISC_KEY, JSON.stringify({ niche: disc.niche, queries: disc.queries })); } catch (e) {} }
+  function queriesFor(n) { if (!disc.queries[n]) disc.queries[n] = (NICHE_QUERIES[n] || []).slice(); return disc.queries[n]; }
+  function ebayActive(q) { return "https://www.ebay.ie/sch/i.html?_nkw=" + encodeURIComponent(q); }
+  function candPostage(c) { return num(c.postage) || POSTAGE_DEF[c.category || disc.niche] || 8; }
+
+  function sampleCandidates(n) {
+    return (SAMPLE_CANDIDATES[n] || []).map(function (c, i) {
+      return { id: "s-" + n + "-" + i, title: c.t, price: c.price, estResale: c.est, cond: c.cond, soldQuery: c.q, reasoning: c.r, category: n, source: "eBay", sample: true };
+    });
+  }
+  function candScore(c) { return calc({ buy: c.price, sell: c.estResale, postage: candPostage(c), packaging: 1, feePct: 13, fixedFee: 0.35 }); }
+
+  function renderQueries() {
+    var qs = queriesFor(disc.niche);
+    id("queries").innerHTML = qs.length ? qs.map(function (q, i) {
+      return '<span class="qchip">' + esc(q) + '<button class="qx" data-i="' + i + '" aria-label="Remove ' + esc(q) + '">✕</button></span>';
+    }).join("") : '<span class="hint" style="font-size:12.5px;color:var(--ink-faint)">No saved searches yet — add the terms the scanner should watch.</span>';
+    Array.prototype.forEach.call(id("queries").querySelectorAll(".qx"), function (b) {
+      b.addEventListener("click", function () { qs.splice(+b.getAttribute("data-i"), 1); saveDisc(); renderQueries(); });
+    });
+  }
+
+  function liveDiscoveries() { return (Store.discoveries || []).filter(function (d) { return d.status !== "dismissed" && !disc.dismissed[d.id]; }); }
+
+  function renderDiscover() {
+    id("nicheSel").value = disc.niche;
+    renderQueries();
+    var note = id("discNote");
+    var live = liveDiscoveries();
+    var cands;
+    if (live.length) {
+      cands = live.slice();
+      note.className = "disc-note live";
+      note.innerHTML = "● <strong>Live</strong> — " + live.length + " opportunit" + (live.length === 1 ? "y" : "ies") + " your scanner wrote into Scout’s shared store. Newest scans appear here automatically.";
+    } else {
+      cands = sampleCandidates(disc.niche);
+      note.className = "disc-note";
+      note.innerHTML = 'These are <span class="ex-tag">sample</span> candidates, so you can see the ranking and the hand-off to your board. The page can’t call eBay directly — real listings arrive when a <strong>scheduled scanner</strong> (a server-side agent) searches your saved terms, values each hit, and writes the good ones here. Ask Claude to set the scanner up for this niche.';
+    }
+    cands = cands.filter(function (c) { return !disc.added[c.id] || true; });
+    cands.sort(function (a, b) { return candScore(b).roi - candScore(a).roi; });
+    id("candidates").innerHTML = cands.length ? cands.map(candCard).join("") : '<div class="empty">No candidates. Run a scan or connect the scanner.</div>';
+    wireCandidates();
+  }
+
+  function candCard(c) {
+    var r = candScore(c), v = verdict(r);
+    var added = disc.added[c.id] || c.status === "added";
+    var q = c.soldQuery || c.title;
+    return '<div class="cand' + (added ? ' added' : '') + '">' +
+      '<div class="cand-rank"><span class="badge ' + v + '">' + (v === "buy" ? "Buy" : v === "maybe" ? "Maybe" : "Skip") + '</span></div>' +
+      '<div class="cand-main"><div class="ct">' + esc(c.title) + '</div>' +
+      '<div class="cm">' + esc(c.source || "eBay") + ' · ' + esc(c.cond || "used") + ' · <span class="mono">' + eur0(c.price) + ' → ' + eur0(c.estResale) + '</span> est. resale</div>' +
+      (c.reasoning ? '<div class="cr">' + esc(c.reasoning) + '</div>' : '') +
+      '<div class="clinks"><a href="' + esc(ebayLink(q)) + '" target="_blank" rel="noopener">Check eBay sold ↗</a><a href="' + esc(ebayActive(q)) + '" target="_blank" rel="noopener">Live listings ↗</a></div></div>' +
+      '<div class="cand-right"><div class="cand-fig"><span class="p ' + (r.net >= 0 ? 'pos' : 'neg') + '">' + eur0(r.net) + '</span><span class="roi"> · ' + pct(r.roi) + ' ROI</span></div>' +
+      (added ? '<span class="cand-added">✓ On board</span>' : '<div class="cand-actions"><button class="btn primary cadd" data-id="' + esc(c.id) + '">Add</button><button class="btn ghost cdis" data-id="' + esc(c.id) + '">Dismiss</button></div>') +
+      '</div></div>';
+  }
+
+  function candById(id0) {
+    var live = liveDiscoveries(); for (var i = 0; i < live.length; i++) if (live[i].id === id0) return live[i];
+    var s = sampleCandidates(disc.niche); for (var j = 0; j < s.length; j++) if (s[j].id === id0) return s[j];
+    return null;
+  }
+  function wireCandidates() {
+    var host = id("candidates");
+    Array.prototype.forEach.call(host.querySelectorAll(".cadd"), function (b) {
+      b.addEventListener("click", function () {
+        var c = candById(b.getAttribute("data-id")); if (!c) return;
+        var f = { id: "f" + Date.now(), item: c.title, category: c.category || disc.niche, source: c.source || "eBay",
+          buy: c.price, sell: c.estResale, postage: candPostage(c), feePct: 13, fixedFee: 0.35, packaging: 1, status: "watching", createdAt: Date.now() };
+        Store.put(f);
+        disc.added[c.id] = true;
+        if (Store.mode === "db" && !c.sample) Store.db.doc("discoveries/" + c.id).update({ status: "added" }).catch(function () {});
+        renderDiscover(); flashTab("tab-board");
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll(".cdis"), function (b) {
+      b.addEventListener("click", function () {
+        var idv = b.getAttribute("data-id");
+        disc.dismissed[idv] = true;
+        var c = candById(idv);
+        if (c && Store.mode === "db" && !c.sample) Store.db.doc("discoveries/" + idv).update({ status: "dismissed" }).catch(function () {});
+        renderDiscover();
+      });
+    });
+  }
+
+  id("nicheSel").addEventListener("change", function () { disc.niche = id("nicheSel").value; saveDisc(); renderDiscover(); });
+  id("scanBtn").addEventListener("click", function () {
+    var b = id("scanBtn"), old = b.textContent; b.disabled = true; b.textContent = "Scanning…";
+    setTimeout(function () { b.disabled = false; b.textContent = old; renderDiscover(); }, 650);
+  });
+  id("qadd").addEventListener("submit", function (e) {
+    e.preventDefault(); var v = id("qinput").value.trim(); if (!v) return;
+    queriesFor(disc.niche).push(v); id("qinput").value = ""; saveDisc(); renderQueries();
+  });
+
   // ---------- tabs ----------
-  var TABS = ["assess", "board", "learn"];
+  var TABS = ["assess", "discover", "board", "learn"];
   function selectTab(name) {
     TABS.forEach(function (t) {
       var on = t === name;
       id("tab-" + t).setAttribute("aria-selected", on);
       id("panel-" + t).hidden = !on;
     });
+    if (name === "discover") renderDiscover();
     if (name === "board") renderBoard();
     if (name === "learn") renderLearn();
   }
@@ -600,6 +791,9 @@
   // ---------- re-render on store change ----------
   function refreshAll() {
     id("boardCount").textContent = displayFinds().length;
+    var dn = liveDiscoveries().length || sampleCandidates(disc.niche).filter(function (c) { return !disc.added[c.id] && !disc.dismissed[c.id]; }).length;
+    id("discCount").textContent = dn;
+    if (!id("panel-discover").hidden) renderDiscover();
     if (!id("panel-board").hidden) renderBoard();
     if (!id("panel-learn").hidden) renderLearn();
   }
@@ -636,6 +830,11 @@
         var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
         Store.finds = arr; Store.emit();
       }, function (e) { console.warn("db snapshot", e); id("storeLabel").textContent = "local"; id("storeChip").className = "store-chip"; Store.mode = "local"; Store.finds = Store.loadLocal(); Store.emit(); });
+      db.collection("discoveries").onSnapshot(function (snap) {
+        var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
+        arr.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
+        Store.discoveries = arr; Store.emit();
+      }, function () {});
     }).catch(function () {});
   } else { showUnavailable(); }
 
