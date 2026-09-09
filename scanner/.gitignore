@@ -1,0 +1,4 @@
+.env
+scan-results.json
+radar-results.json
+node_modules/

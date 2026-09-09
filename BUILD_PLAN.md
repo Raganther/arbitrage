@@ -31,9 +31,9 @@ so we design around the gaps.
 
 | Data you want | Source | Access | What Scout does |
 |---|---|---|---|
-| **Active listings** (for sale now) | eBay **Browse API** (Finding API is dead) | Approval-gated | Primary discovery source *if* granted. Built behind a swappable adapter so we're never blocked waiting on it. |
+| **Active listings** (for sale now) | eBay **Browse API** (Finding API is dead) | Open to all developers in Production, 5,000 calls/day | Primary discovery source — integrated in [`scanner/`](./scanner). Behind a swappable adapter so a paid feed could replace it. |
 | **Sold prices** (what it actually sold for) | eBay **Marketplace Insights API** | **Closed** to individuals | Resale value comes from your confirmed sold-comp checks and, over time, your own recorded outcomes. |
-| **Did it sell?** (live / ended) | Browse API item lookup | Same as Browse | Poll each watched item; when it ends, prompt you for the final price. Reliable for status, not for auto-capturing price. |
+| **Did it sell?** (live / ended) | Browse API item lookup | Same as Browse | `scanner/watch.mjs` polls each watched item and reports active / ended / gone; you record the final price. Reliable for status, not for auto-capturing price. |
 | **Local bargains** (Adverts, DoneDeal, Marketplace) | No public API; bot-hostile | Off-limits | Out of scope until much later — human-in-the-loop, not a scraper. |
 | **Fallback feed** (listings + ~90-day sold) | Third-party (SoldComps, Apify) | Paid, open signup | If eBay access never comes, drop into the same adapter. ~$2/1,000 results; ToS burden on us. |
 
@@ -58,14 +58,17 @@ reliable in. No scanning, no scraping, breaks no rules, highest value per hour.
   measurably better.
 - **Effort:** 1–2 sessions · **Cost:** €0 · **Data access:** none.
 
-### Phase 2 — Auto-discovery for one niche 🔧 Built, awaiting the eBay key
+### Phase 2 — Auto-discovery for one niche 🔧 Built, eBay API integrated
 The **Discover** tab, saved searches, ROI ranking, the live `db` seam, and a
-one-click **Import** are built and working. The **scanner** ([`scanner/scan.mjs`](./scanner/scan.mjs))
-is written and runnable (`--dry-run` works today) — it finds underpriced listings
-from the eBay Browse API by comparing each to its peers' median asking price
-([`SCANNER.md`](./SCANNER.md)). The only thing outstanding is your **eBay
-Production keyset** (applied for) plus a machine that can reach eBay to run it on
-a timer. Optional later: full automation (scheduled push into `db`, no import).
+one-click **Import** are built and working. The **scanner** ([`scanner/`](./scanner))
+is integrated with the **eBay Browse API** through a tested, dependency-free
+client (OAuth token handling, sandbox/production, paging, retries, item status):
+`npm run check` verifies your developer keyset, `npm run scan` finds underpriced
+listings by comparing each to its peers' median landed price, `npm run watch`
+tells you whether a tracked listing is still live ([`SCANNER.md`](./SCANNER.md)).
+What's left is running it: put your keyset in `scanner/.env` on a machine that
+can reach eBay and schedule it. Optional later: full automation (scheduled push
+into `db`, no import).
 
 Wire the top of the loop. On a schedule, pull real active listings for a handful
 of saved searches in one niche, run each through the valuation engine, and drop

@@ -13,29 +13,58 @@ the two halves meet in Scout's shared `db` store.
 └────────────────────┘                 └──────────────────┘                    └───────────────┘
 ```
 
-## The scanner script — `scanner/scan.mjs`
+## The scanner — `scanner/`
 
-A runnable first version lives at [`scanner/scan.mjs`](./scanner/scan.mjs). It uses
-**only the accessible eBay Browse API** (active listings), so it works the moment
-your Production keyset is live — no closed sold-price API needed.
+A runnable scanner lives in [`scanner/`](./scanner). It uses **only the eBay Browse
+API** (active listings), which is open to every eBay developer account in
+Production (no approval step; 5,000 calls/day) — no closed sold-price API needed.
 
-**How it spots deals without sold prices:** for each *specific* item search
-("Boss DS-1", not "guitar pedal"), it pulls the current listings, takes the
-**median asking price** as a rough market value, and flags listings priced well
-below it (default: ≥30% under, and ≥€15 gap). That's a candidate — an underpriced
-listing relative to its peers — which you then verify against real **sold** comps
-in Scout. `estResale` is the median asking price, a proxy, never a guarantee.
+| File | What it does |
+|---|---|
+| `ebay.mjs` | The eBay client: OAuth Application token (cached, auto-refreshed), sandbox/production switch, `search` + paging, item lookup, retries on 429/5xx, readable errors. Dependency-free. |
+| `check.mjs` | `npm run check` — proves your keys work: mints a token, runs one search, prints what came back or *why* it failed. |
+| `scan.mjs` | `npm run scan` — the scanner. Writes `scan-results.json` for Scout's Discover import. |
+| `radar.mjs` | `npm run radar -- "niche"` — active-listing count + median asking for Demand Radar's competition side. |
+| `watch.mjs` | `npm run watch -- <url\|id>` — is a listing still live? (Build Plan stage 05.) |
+| `test/` | `npm test` — 24 offline tests against a fake eBay, so the code is verified before you spend a call. |
 
-```bash
-cd scanner
-node scan.mjs --dry-run          # no key needed: writes a sample scan-results.json
-EBAY_CLIENT_ID=... EBAY_CLIENT_SECRET=... node scan.mjs   # the real thing
-```
+### Setup — from developer account to first scan
 
-It writes **`scan-results.json`** (the discovery schema below). Runs anywhere with
-Node 18+ and network access to `api.ebay.com` — your own machine on a timer
-(`cron`/Task Scheduler), or a small cloud runner. It does **not** run inside the
-Scout page or a sandbox that blocks eBay.
+1. **Keys.** At [developer.ebay.com](https://developer.ebay.com) → *My Account* →
+   *Application Keys*, create a keyset if you haven't. You get **two**: *Sandbox*
+   and *Production*. Copy the **App ID (Client ID)** and **Cert ID (Client
+   Secret)** of the one you're using — they are not interchangeable.
+2. **Configure.** `cd scanner && cp .env.example .env`, paste the two values in,
+   set `EBAY_ENV` (`sandbox` to test the plumbing, `production` for real
+   listings) and `EBAY_MARKETPLACE` (`EBAY_IE` — or `EBAY_GB`, `EBAY_US`…).
+   `.env` is gitignored; never commit it.
+3. **Check.** `npm run check` (or `npm run check:sandbox`). A good run prints the
+   token lifetime, the number of matching listings, and five of them. Sandbox
+   often returns *zero* results for real product names — that's normal, it's
+   fake data; the point is the token + call succeeded.
+4. **Scan.** `npm run scan` uses the `CONFIG` block in `scan.mjs`; or pass
+   queries straight in: `node scan.mjs --q "Boss DS-1" --q "Zoom H4n" --niche music-gear`;
+   or keep a niche in a JSON file: `node scan.mjs --config pedals.json`.
+5. **Import.** Scout → Discover → *Import scan results* → pick `scan-results.json`.
+
+Needs Node 18+ and a machine that can reach `api.ebay.com` — your own laptop
+on a timer (`cron` / Task Scheduler) or a small cloud runner. It does **not**
+run inside the Scout page, and this repo's build sandbox blocks eBay, so it has
+never been run against the live API from here: the code path is covered by the
+offline tests, and `npm run check` is the live proof.
+
+### How it spots deals without sold prices
+
+For each *specific* item search ("Boss DS-1", not "guitar pedal"), it pulls the
+cheapest used, fixed-price listings that ship to your country, computes the
+**median landed price** (item + postage) across them, and flags listings priced
+well below it (default: ≥30% under and ≥€15 gap). Titles that say *parts /
+faulty / box only* are dropped from the comps. Each flag is a candidate — an
+underpriced listing relative to its peers — which you then verify against real
+**sold** comps in Scout. `estResale` is the median asking price, a proxy, never
+a guarantee. Each run costs one API call per query (more if `compsPerQuery`
+exceeds 200), so a seven-query scan every hour is ~170 calls/day against the
+5,000 budget.
 
 ## Getting results into Scout
 
@@ -71,27 +100,20 @@ so the scanner only needs to supply `price` and `estResale` honestly. When the
 `discoveries` collection is empty, Discover shows clearly-marked **sample**
 candidates instead, so the flow is usable before the scanner exists.
 
-## Why it isn't running yet
+## Where it runs
 
-Two walls, both real:
-
-1. **This build environment blocks eBay.** The network egress proxy returns
-   `EGRESS_BLOCKED` for `ebay.ie`, and web search only surfaces generic category
-   pages — no per-listing prices to trust. A scanner scheduled in *this*
-   environment cannot reach eBay, so it would have nothing real to write.
-2. **Even with network access, listing data is gated** — the eBay Browse API
-   needs a developer account (and possibly approval), or a paid third-party feed.
-
-So the scanner needs a home with open egress to eBay **and** API credentials.
-Until then, Scout's **Assess** tab is the manual version of the same step: paste a
-listing you find while browsing yourself, and it values and boards it. The
-Discover tab shows sample candidates so the pipeline is ready the moment a real
-scanner starts writing to `discoveries/`.
+Not here. This repo's build sandbox blocks `api.ebay.com` (`EGRESS_BLOCKED`), so
+a scanner scheduled in *this* environment would have nothing real to write. Run
+it anywhere with normal internet: your laptop (`npm run scan` on a timer) or a
+small cloud runner with `.env` set. Until you do, Scout's **Assess** tab is the
+manual version of the same step, and Discover shows sample candidates.
 
 ## Honest limits
 
-- **Active-listing access is approval-gated** (eBay) or **paid** (third-party).
-  The seam above doesn't care which — swap the source, keep the schema.
+- **Active listings come from the Browse API** — open to all developers in
+  Production, 5,000 calls/day. The other Buy APIs (Marketplace Insights, Feed,
+  Offer) are approval-gated; the seam above doesn't care — swap the source,
+  keep the schema.
 - **Final sold prices stay closed**, so `estResale` is a sold-comp estimate to be
   verified, never a guarantee — exactly what the Learning tab then grades.
 - Keep the collection modest (prune regularly); an artifact db holds at most

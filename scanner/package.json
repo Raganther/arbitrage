@@ -1,0 +1,18 @@
+{
+  "name": "scout-scanner",
+  "version": "0.2.0",
+  "private": true,
+  "description": "eBay Browse API scanner for Scout — finds underpriced active listings for a niche.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "check": "node check.mjs",
+    "check:sandbox": "node check.mjs --sandbox",
+    "scan": "node scan.mjs",
+    "scan:sandbox": "node scan.mjs --sandbox",
+    "scan:dry": "node scan.mjs --dry-run",
+    "radar": "node radar.mjs",
+    "watch": "node watch.mjs",
+    "test": "node --test test/*.test.mjs"
+  }
+}
