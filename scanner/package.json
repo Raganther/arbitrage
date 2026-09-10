@@ -13,6 +13,9 @@
     "scan:dry": "node scan.mjs --dry-run",
     "radar": "node radar.mjs",
     "watch": "node watch.mjs",
+    "track": "node track.mjs",
+    "market": "node track.mjs --report",
+    "daily": "node scan.mjs && node track.mjs",
     "test": "node --test test/*.test.mjs"
   }
 }

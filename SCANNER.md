@@ -25,7 +25,9 @@ Production (no approval step; 5,000 calls/day) — no closed sold-price API need
 | `check.mjs` | `npm run check` — proves your keys work: mints a token, runs one search, prints what came back or *why* it failed. |
 | `scan.mjs` | `npm run scan` — the scanner. Writes `scan-results.json` for Scout's Discover import. |
 | `radar.mjs` | `npm run radar -- "niche"` — active-listing count + median asking for Demand Radar's competition side. |
-| `watch.mjs` | `npm run watch -- <url\|id>` — is a listing still live? (Build Plan stage 05.) |
+| `watch.mjs` | `npm run watch -- <url\|id>` — is one listing still live? (Build Plan stage 05.) |
+| `track.mjs` | `npm run track` — re-checks every listing a scan recorded; builds your own sold-price history and `data/market.json` (sell-through, est. sold, target buy per search). `npm run market` prints it without API calls. |
+| `store.mjs` | The scanner's memory: `data/watchlist.json` + `data/market.json`, committed so a scheduled run continues where the last stopped. |
 | `test/` | `npm test` — 24 offline tests against a fake eBay, so the code is verified before you spend a call. |
 
 ### Setup — from developer account to first scan
@@ -76,6 +78,27 @@ power adapters, carry cases and 1982 magazine adverts as "deals". With the gate
 and the two-phase search, a run over seven music-gear queries returned real
 units — a Hall of Fame 2 at €100 against a €218 median, Boss DS-1s from Japan at
 €62 against €102 — with nothing spurious.
+
+### Sold prices without the sold-price API — tracking
+
+Every scan records the comparable listings it saw (up to 30 per search) in
+`data/watchlist.json`. `npm run track` re-checks each one (1 API call each). A
+fixed-price listing that ends **early** — with more than a day left on the end
+date eBay gave it — almost certainly sold at its asking price; one that runs
+to its end date and stops didn't sell; one that returns 404 was removed (sold
+or withdrawn — not counted). From these, per search, `data/market.json` holds:
+
+| Field | Meaning |
+|---|---|
+| `sellThrough` | sold ÷ (sold + expired), once 3+ have closed — Demand Radar's key input |
+| `estSold` | median asking of the ones that sold — the real value (null until 3 sales; then the scanner's `estResale` switches to it) |
+| `targetBuy` | half of `estSold` (or of 85% of median asking while it's still a proxy) — the most to pay all-in |
+
+The scanner reads `market.json` on its next run: anything at or under
+`targetBuy` is flagged, and each candidate's reasoning quotes the tracked
+numbers. The longer it runs, the less it leans on asking prices. Budget: ~30
+calls per search per track run, so 7 searches ≈ 210 calls/day plus 14 for the
+scan, well inside 5,000. `npm run daily` does both.
 
 ## Getting results into Scout
 

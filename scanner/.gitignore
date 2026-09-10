@@ -1,4 +1,6 @@
+# keys — never commit
 .env
-scan-results.json
-radar-results.json
+# ad-hoc outputs (the tracked state lives in data/ and IS committed)
+/scan-results.json
+/radar-results.json
 node_modules/

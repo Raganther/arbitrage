@@ -21,10 +21,12 @@
  *         node scan.mjs --dry-run              # no API calls; sample file
  */
 
-import { writeFileSync, readFileSync } from "node:fs";
+import { writeFileSync, readFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnv, parseArgs } from "./env.mjs";
 import { clientFromEnv } from "./ebay.mjs";
+import { loadWatchlist, saveWatchlist, rememberComps, loadMarket, dataPath } from "./store.mjs";
 
 // ---------- config: edit these, or override with --config file.json ----------
 export const DEFAULT_CONFIG = {
@@ -62,6 +64,7 @@ export const DEFAULT_CONFIG = {
   homeCountry: "IE",
   euCountries: ["IE", "GB", "DE", "FR", "NL", "BE", "IT", "ES", "AT", "PT", "PL", "CZ", "DK", "SE", "FI", "LU"],
   assumedPostage: { home: 8, eu: 15, other: 30 },
+  watchPerQuery: 30,        // comps per query to keep tracking (1 API call each per track run)
 };
 // -----------------------------------------------------------------------------
 
@@ -114,11 +117,13 @@ export function relevant(listings, q, cfg) {
 }
 
 /** Turn one query's listings into discovery docs (pure; unit-tested). */
-export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now(), extra = []) {
+export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now(), extra = [], market = null) {
   const clean = relevant(listings, q, cfg);
   if (clean.length < (cfg.minComps || 5)) return [];
   const mid = median(clean.map((l) => l.landed));
-  const threshold = mid * (1 - cfg.discount);
+  const mk = market && market[q] && market[q].targetBuy ? market[q] : null;
+  // With tracked sales data, the ceiling is the market's targetBuy; otherwise the discount-under-median rule.
+  const threshold = mk ? Math.max(mk.targetBuy, mid * (1 - cfg.discount)) : mid * (1 - cfg.discount);
   const floor = mid * (cfg.minFraction == null ? 0.25 : cfg.minFraction);
   const seen = new Set();
   const pool = clean.concat(relevant(extra, q, cfg)).filter((l) => { const k = l.itemId || l.url || l.title; if (seen.has(k)) return false; seen.add(k); return true; });
@@ -134,7 +139,9 @@ export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now
         id: l.legacyItemId ? "ebay-" + l.legacyItemId : undefined,
         title: l.title,
         price: Math.round(l.landed * 100) / 100,   // landed = item + postage to you
-        estResale: Math.round(mid),                // proxy: median landed asking — VERIFY vs sold comps
+        estResale: mk && mk.estSold ? mk.estSold : Math.round(mid),   // tracked sold estimate when we have one, else median asking
+        estBasis: mk && mk.estSold ? "tracked-sales" : "median-asking",
+        targetBuy: mk ? mk.targetBuy : undefined,
         cond: l.cond,
         soldQuery: q,
         category: cfg.niche,
@@ -144,8 +151,9 @@ export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now
         itemId: l.itemId || "",
         endsAt: l.endsAt || "",
         reasoning: "Listed at €" + Math.round(l.price) + " (" + shipNote + "), ~" + under + "% under the €" +
-          Math.round(mid) + " median for \"" + q + "\" (" + clean.length + " comps" + (l.location ? ", ships from " + l.location : "") +
-          "). Confirm real value in sold listings.",
+          Math.round(mid) + " median for \"" + q + "\" (" + clean.length + " comps" + (l.location ? ", ships from " + l.location : "") + ")." +
+          (mk && mk.estSold ? " Tracked sales say ~€" + mk.estSold + " (" + mk.sellThrough + "% sell-through); target buy ≤€" + mk.targetBuy + "." :
+            mk ? " Target buy ≤€" + mk.targetBuy + " (proxy, no sales tracked yet)." : "") + " Confirm in sold listings.",
         foundAt: now,
         status: "new",
       };
@@ -175,9 +183,9 @@ export function resolveConfig(args, env = process.env) {
 }
 
 /** Run a scan with an injected client — the CLI wraps this; tests call it directly. */
-export async function runScan(client, cfg, { log = console.log, now = () => Date.now() } = {}) {
+export async function runScan(client, cfg, { log = console.log, now = () => Date.now(), watchlist = null, market = null } = {}) {
   const results = [];
-  const stats = { queries: 0, listings: 0, candidates: 0, errors: 0 };
+  const stats = { queries: 0, listings: 0, candidates: 0, errors: 0, tracked: 0 };
   for (const q of cfg.queries) {
     stats.queries++;
     try {
@@ -201,9 +209,11 @@ export async function runScan(client, cfg, { log = console.log, now = () => Date
         extra = band.items;
         stats.listings += extra.length;
       }
-      const found = findCandidates(q, items, cfg, now(), extra);
+      const found = findCandidates(q, items, cfg, now(), extra, market);
       stats.candidates += found.length;
-      log("• " + q + ": " + comps.length + " comps from " + items.length + " sampled (" + total + " total), " + extra.length + " in the cheap band, " + found.length + " candidate(s)");
+      let added = 0;
+      if (watchlist) { added = rememberComps(watchlist, q, comps, { now: now(), perQuery: cfg.watchPerQuery || 30 }); stats.tracked += added; }
+      log("• " + q + ": " + comps.length + " comps from " + items.length + " sampled (" + total + " total), " + extra.length + " in the cheap band, " + found.length + " candidate(s)" + (watchlist ? ", +" + added + " tracked" : ""));
       results.push(...found);
     } catch (e) {
       stats.errors++;
@@ -219,7 +229,8 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.sandbox) process.env.EBAY_ENV = "sandbox";
   if (args.production) process.env.EBAY_ENV = "production";
-  const out = args.out ? String(args.out) : "scan-results.json";
+  const dir = args.data ? String(args.data) : undefined;
+  const out = args.out ? String(args.out) : dataPath("scan-results.json", dir);
   const cfg = resolveConfig(args);
 
   let results;
@@ -231,11 +242,15 @@ async function main() {
     try { client = clientFromEnv(process.env, { marketplace: cfg.marketplace, log: (m) => console.log("  · " + m) }); }
     catch (e) { console.error(e.message + "\n  Copy .env.example to .env and fill it in, or run with --dry-run."); process.exit(1); }
     console.log(`Scanning "${cfg.niche}" on ${cfg.marketplace} (${client.env}) — ${cfg.queries.length} queries, ≥${Math.round(cfg.discount * 100)}% under median, ≥€${cfg.minMarginEur} gap`);
-    const r = await runScan(client, cfg);
+    const watchlist = loadWatchlist(dir), market = loadMarket(dir);
+    const r = await runScan(client, cfg, { watchlist, market });
     results = r.results;
-    console.log(`\n${r.stats.listings} listings sampled · ${r.stats.candidates} candidates · ${r.stats.errors} errors · ${client.calls.api} API calls (of ~5,000/day)`);
+    saveWatchlist(watchlist, dir);
+    console.log(`\n${r.stats.listings} listings sampled · ${r.stats.candidates} candidates · ${r.stats.tracked} new listings tracked (${watchlist.filter((e) => e.status === "active").length} active) · ${r.stats.errors} errors · ${client.calls.api} API calls (of ~5,000/day)`);
+    if (!market) console.log("No tracked sales yet — run `node track.mjs` daily; after a couple of weeks estResale switches from median-asking to tracked sales.");
     if (r.stats.errors === r.stats.queries && r.stats.queries) process.exit(1);
   }
+  mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(results, null, 2));
   console.log("Wrote " + out + " — " + results.length + " candidate(s). Import it into Scout's Discover tab.");
 }
