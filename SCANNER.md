@@ -48,23 +48,34 @@ Production (no approval step; 5,000 calls/day) — no closed sold-price API need
 5. **Import.** Scout → Discover → *Import scan results* → pick `scan-results.json`.
 
 Needs Node 18+ and a machine that can reach `api.ebay.com` — your own laptop
-on a timer (`cron` / Task Scheduler) or a small cloud runner. It does **not**
-run inside the Scout page, and this repo's build sandbox blocks eBay, so it has
-never been run against the live API from here: the code path is covered by the
-offline tests, and `npm run check` is the live proof.
+on a timer (`cron` / Task Scheduler), a small cloud runner, or a Claude Code
+environment with `api.ebay.com` on its network allowlist. It does **not** run
+inside the Scout page. It has
+been run live from a Claude Code session with eBay hosts allow-listed: with a
+Production keyset it returns real ebay.ie listings. `npm run check` is the
+proof on any new machine.
 
 ### How it spots deals without sold prices
 
-For each *specific* item search ("Boss DS-1", not "guitar pedal"), it pulls the
-cheapest used, fixed-price listings that ship to your country, computes the
-**median landed price** (item + postage) across them, and flags listings priced
-well below it (default: ≥30% under and ≥€15 gap). Titles that say *parts /
-faulty / box only* are dropped from the comps. Each flag is a candidate — an
-underpriced listing relative to its peers — which you then verify against real
+For each *specific* item search ("Boss DS-1", not "guitar pedal"), it makes two
+calls. First it samples used, fixed-price listings that ship to your country in
+eBay's **best-match** order, keeps only titles that contain every query word and
+aren't accessories or ephemera (cases, adapters, manuals, magazine adverts,
+clones…) or broken (by title *and* by eBay's condition field), and takes the
+**median landed price** (item + postage; when postage isn't stated it assumes
+€8 from Ireland, €15 from Europe, €30 from further away). Then it searches the
+**cheap band** — 25% to 70% of that median, cheapest first — and flags what's
+there (default: ≥30% under the median and ≥€15 gap). Each flag is a candidate —
+an underpriced listing relative to its peers — which you then verify against real
 **sold** comps in Scout. `estResale` is the median asking price, a proxy, never
-a guarantee. Each run costs one API call per query (more if `compsPerQuery`
-exceeds 200), so a seven-query scan every hour is ~170 calls/day against the
-5,000 budget.
+a guarantee. Two API calls per query, so a seven-query scan every hour is ~340
+calls/day against the 5,000 budget.
+
+The first live runs shaped these rules: cheapest-first sampling alone returned
+power adapters, carry cases and 1982 magazine adverts as "deals". With the gate
+and the two-phase search, a run over seven music-gear queries returned real
+units — a Hall of Fame 2 at €100 against a €218 median, Boss DS-1s from Japan at
+€62 against €102 — with nothing spurious.
 
 ## Getting results into Scout
 
@@ -102,11 +113,18 @@ candidates instead, so the flow is usable before the scanner exists.
 
 ## Where it runs
 
-Not here. This repo's build sandbox blocks `api.ebay.com` (`EGRESS_BLOCKED`), so
-a scanner scheduled in *this* environment would have nothing real to write. Run
-it anywhere with normal internet: your laptop (`npm run scan` on a timer) or a
-small cloud runner with `.env` set. Until you do, Scout's **Assess** tab is the
-manual version of the same step, and Discover shows sample candidates.
+Anywhere that can reach `api.ebay.com`: your laptop (`npm run scan` on a timer),
+a small cloud runner with `.env` set, or a Claude Code cloud environment whose
+network allowlist includes `api.ebay.com` and `api.sandbox.ebay.com` (set there
+in the environment's settings; the keys go in its *API credentials* section, not
+in chat or in the repo). A scheduled Routine in such an environment can run the
+scan and hand you the results.
+
+**Production keyset gotcha:** a new Production keyset shows *"Your keyset is
+currently disabled"* and returns `invalid_client` until you handle eBay's
+Marketplace Account Deletion rule. On the keyset's *Notifications* page, turn on
+*Exempted from Marketplace Account Deletion*, choose *I do not persist eBay
+data*, and submit. It activates immediately.
 
 ## Honest limits
 

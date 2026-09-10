@@ -49,6 +49,19 @@ export const DEFAULT_CONFIG = {
   minMarginEur: 15,      // and at least this many EUR below it
   maxPerQuery: 3,        // keep at most this many candidates per query
   excludeWords: ["parts", "spares", "repair", "faulty", "broken", "not working", "for parts", "case only", "box only", "manual only"],
+  // Accessories and ephemera that share the product's name but aren't the product.
+  accessoryWords: ["case", "bag", "cover", "sleeve", "pouch", "adapter", "adaptor", "charger", "power supply", "psu", "cable", "lead",
+    "manual", "guide", "book", "advert", "magazine", "cutting", "brochure", "catalog", "sticker", "decal", "knob", "knobs", "footswitch cap",
+    "replacement", "spare", "stand", "clip", "mount", "bracket", "strap", "windscreen", "foam", "grille", "grill", "capsule", "cartridge",
+    "battery", "batteries", "screen protector", "skin", "accessory pack", "accessories", "kit for", "compatible with", "fits", "holder",
+    "dvd", "tutorial", "dictionary", "clone", "clones", "copy", "replica", "style", "poster", "print", "t-shirt", "tshirt", "mug", "keyring"],
+  requireQueryWords: true,  // a candidate's title must contain every word of the query (Boss + DS-1)
+  minFraction: 0.25,        // ignore listings under 25% of the median — never the real item
+  cheapBandLimit: 50,       // second, targeted search of the cheap band (1 extra call per query)
+  // When a listing doesn't state postage ("calculated"), assume this much by origin so landed prices stay honest.
+  homeCountry: "IE",
+  euCountries: ["IE", "GB", "DE", "FR", "NL", "BE", "IT", "ES", "AT", "PT", "PL", "CZ", "DK", "SE", "FI", "LU"],
+  assumedPostage: { home: 8, eu: 15, other: 30 },
 };
 // -----------------------------------------------------------------------------
 
@@ -63,19 +76,60 @@ function looksBroken(title, words) {
   return words.some((w) => t.includes(w));
 }
 
+const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+/** Does the title contain every word of the query (hyphen/space-insensitive: "DS-1" matches "DS1")? */
+export function matchesQuery(title, q) {
+  const t = norm(title);
+  return String(q).split(/\s+/).filter(Boolean).every((w) => t.includes(norm(w)));
+}
+
+/** Accessory/ephemera heuristics: "... for Boss RC-1", "case for", "manual", "magazine advert". */
+export function looksAccessory(title, q, words) {
+  const t = " " + String(title).toLowerCase().replace(/[^a-z0-9]+/g, " ") + " ";
+  if (words.some((w) => t.includes(" " + w + " "))) return true;
+  // "<thing> for <the product>" — the product is the object, not the item for sale.
+  const qFirst = String(q).split(/\s+/)[0].toLowerCase();
+  if (new RegExp("\\s(for|fits|compatible with|suitable for)\\s+(the\\s+)?" + qFirst.replace(/[^a-z0-9]/g, "") + "\\b").test(t.replace(/[^a-z0-9 ]/g, ""))) return true;
+  return false;
+}
+
+/** Fill in a postage estimate by origin when the listing doesn't state one; returns a copy. */
+export function withAssumedPostage(l, cfg) {
+  if (l.shipping != null || !isFinite(l.price) || !cfg.assumedPostage) return l;
+  const loc = (l.location || "").toUpperCase();
+  const tier = loc === (cfg.homeCountry || "IE") ? "home" : (cfg.euCountries || []).includes(loc) ? "eu" : "other";
+  const est = Number(cfg.assumedPostage[tier]);
+  if (!isFinite(est)) return l;
+  return { ...l, landed: l.price + est, assumedShipping: est };
+}
+
+/** Keep only listings that look like the actual product in sellable condition. */
+export function relevant(listings, q, cfg) {
+  return listings.map((l) => withAssumedPostage(l, cfg)).filter((l) => isFinite(l.landed) && l.landed > 0 &&
+    !looksBroken(l.title, cfg.excludeWords || []) &&
+    !looksBroken(l.cond || "", ["parts", "not working", "defective", "faulty"]) && String(l.conditionId) !== "7000" &&
+    !looksAccessory(l.title, q, cfg.accessoryWords || []) &&
+    (cfg.requireQueryWords === false || matchesQuery(l.title, q)));
+}
+
 /** Turn one query's listings into discovery docs (pure; unit-tested). */
-export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now()) {
-  const clean = listings.filter((l) => isFinite(l.landed) && l.landed > 0 && !looksBroken(l.title, cfg.excludeWords || []));
+export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now(), extra = []) {
+  const clean = relevant(listings, q, cfg);
   if (clean.length < (cfg.minComps || 5)) return [];
   const mid = median(clean.map((l) => l.landed));
   const threshold = mid * (1 - cfg.discount);
-  return clean
-    .filter((l) => l.landed <= threshold && (mid - l.landed) >= cfg.minMarginEur)
+  const floor = mid * (cfg.minFraction == null ? 0.25 : cfg.minFraction);
+  const seen = new Set();
+  const pool = clean.concat(relevant(extra, q, cfg)).filter((l) => { const k = l.itemId || l.url || l.title; if (seen.has(k)) return false; seen.add(k); return true; });
+  return pool
+    .filter((l) => l.landed <= threshold && l.landed >= floor && (mid - l.landed) >= cfg.minMarginEur)
     .sort((a, b) => (mid - b.landed) - (mid - a.landed))
     .slice(0, cfg.maxPerQuery)
     .map((l) => {
       const under = Math.round((1 - l.landed / mid) * 100);
-      const shipNote = l.shipping == null ? "postage unknown" : l.shipping === 0 ? "free postage" : "incl. €" + l.shipping.toFixed(2) + " postage";
+      const shipNote = l.assumedShipping != null ? "postage not stated, ~€" + l.assumedShipping + " assumed" :
+        l.shipping == null ? "postage unknown" : l.shipping === 0 ? "free postage" : "incl. €" + l.shipping.toFixed(2) + " postage";
       return {
         id: l.legacyItemId ? "ebay-" + l.legacyItemId : undefined,
         title: l.title,
@@ -127,20 +181,29 @@ export async function runScan(client, cfg, { log = console.log, now = () => Date
   for (const q of cfg.queries) {
     stats.queries++;
     try {
-      const { total, items } = await client.searchAll({
-        q,
-        limit: Math.min(cfg.compsPerQuery, 200),
-        sort: "price",  // cheapest first — the deals are at this end
-        filter: {
-          buyingOptions: ["FIXED_PRICE"],
-          conditions: cfg.conditions && cfg.conditions.length ? cfg.conditions : undefined,
-          deliveryCountry: cfg.deliveryCountry || undefined,
-        },
-      }, cfg.compsPerQuery);
+      const filter = {
+        buyingOptions: ["FIXED_PRICE"],
+        conditions: cfg.conditions && cfg.conditions.length ? cfg.conditions : undefined,
+        deliveryCountry: cfg.deliveryCountry || undefined,
+      };
+      // 1) Comps: eBay's best-match order gives the actual product, not the cheapest accessories.
+      const { total, items } = await client.searchAll({ q, limit: Math.min(cfg.compsPerQuery, 200), filter }, cfg.compsPerQuery);
       stats.listings += items.length;
-      const found = findCandidates(q, items, cfg, now());
+      const comps = relevant(items, q, cfg);
+      // 2) Deals: a targeted look at the cheap band under the median, cheapest first.
+      let extra = [];
+      if (comps.length >= (cfg.minComps || 5) && cfg.cheapBandLimit > 0) {
+        const mid = median(comps.map((l) => l.landed));
+        const band = await client.search({
+          q, limit: cfg.cheapBandLimit, sort: "price",
+          filter: { ...filter, priceMin: Math.floor(mid * (cfg.minFraction == null ? 0.25 : cfg.minFraction)), priceMax: Math.ceil(mid * (1 - cfg.discount)), currency: cfg.currency || "EUR" },
+        });
+        extra = band.items;
+        stats.listings += extra.length;
+      }
+      const found = findCandidates(q, items, cfg, now(), extra);
       stats.candidates += found.length;
-      log("• " + q + ": " + items.length + " of " + total + " listings sampled, " + found.length + " candidate(s)");
+      log("• " + q + ": " + comps.length + " comps from " + items.length + " sampled (" + total + " total), " + extra.length + " in the cheap band, " + found.length + " candidate(s)");
       results.push(...found);
     } catch (e) {
       stats.errors++;

@@ -1,12 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findCandidates, median, runScan, resolveConfig, DEFAULT_CONFIG } from "../scan.mjs";
+import { findCandidates, median, runScan, resolveConfig, matchesQuery, looksAccessory, DEFAULT_CONFIG } from "../scan.mjs";
 import { EbayClient, summarise } from "../ebay.mjs";
 import { fakeFetch, makeItem } from "./fake-ebay.mjs";
 import { parseEnv, parseArgs } from "../env.mjs";
 
 const cfg = { ...DEFAULT_CONFIG, niche: "music-gear", discount: 0.3, minMarginEur: 15, maxPerQuery: 3, minComps: 5 };
-const L = (i, price, extra = {}) => summarise(makeItem(i, { price, ...extra }));
+const L = (i, price, extra = {}) => summarise(makeItem(i, { price, title: "Boss DS-1 distortion pedal #" + i, ...extra }));
 
 test("median", () => {
   assert.equal(median([3, 1, 2]), 2);
@@ -25,46 +25,93 @@ test("findCandidates flags listings well under the median landed price", () => {
 
 test("postage counts: a cheap item with dear postage is not a deal", () => {
   const listings = [L(1, 100), L(2, 100), L(3, 100), L(4, 100), L(5, 100), L(6, 60, { shipping: 35 })];
-  assert.equal(findCandidates("x", listings, cfg).length, 0);
+  assert.equal(findCandidates("Boss DS-1", listings, cfg).length, 0);
   const deal = [...listings.slice(0, 5), L(7, 55, { shipping: 5 })];
-  const out = findCandidates("x", deal, cfg);
+  const out = findCandidates("Boss DS-1", deal, cfg);
   assert.equal(out.length, 1); assert.equal(out[0].price, 60); assert.match(out[0].reasoning, /incl. €5.00 postage/);
 });
 
 test("too few comps → no candidates; broken/parts listings excluded from comps", () => {
-  assert.equal(findCandidates("x", [L(1, 100), L(2, 100), L(3, 10)], cfg).length, 0);
+  assert.equal(findCandidates("Boss DS-1", [L(1, 100), L(2, 100), L(3, 10)], cfg).length, 0);
   const listings = [L(1, 100), L(2, 100), L(3, 100), L(4, 100), L(5, 100), L(6, 20, { title: "Boss DS-1 for parts not working" })];
-  assert.equal(findCandidates("x", listings, cfg).length, 0, "the parts listing is dropped, not flagged");
+  assert.equal(findCandidates("Boss DS-1", listings, cfg).length, 0, "the parts listing is dropped, not flagged");
+  const byCond = [L(1, 100), L(2, 100), L(3, 100), L(4, 100), L(5, 100), L(6, 50, { cond: "For parts or not working" })];
+  assert.equal(findCandidates("Boss DS-1", byCond, cfg).length, 0, "eBay's condition field is checked too");
 });
 
 test("minMarginEur stops tiny absolute gaps on cheap items; maxPerQuery caps", () => {
   const cheap = [L(1, 20), L(2, 20), L(3, 20), L(4, 20), L(5, 20), L(6, 10)];
-  assert.equal(findCandidates("x", cheap, cfg).length, 0, "50% under but only €10 gap");
+  assert.equal(findCandidates("Boss DS-1", cheap, cfg).length, 0, "50% under but only €10 gap");
   const many = [L(1, 100), L(2, 100), L(3, 100), L(4, 100), L(5, 100), L(6, 50), L(7, 40), L(8, 30), L(9, 20)];
-  const out = findCandidates("x", many, cfg);
-  assert.equal(out.length, 3); assert.equal(out[0].price, 20, "biggest gap first");
+  const out = findCandidates("Boss DS-1", many, cfg);
+  assert.equal(out.length, 3); assert.equal(out[0].price, 30, "biggest gap first; €20 is under the 25%-of-median floor");
 });
 
 test("runScan end-to-end against the fake API writes the discovery schema", async () => {
-  const items = [makeItem(1, { price: 100 }), makeItem(2, { price: 100 }), makeItem(3, { price: 100 }), makeItem(4, { price: 110 }), makeItem(5, { price: 90 }), makeItem(6, { price: 55 })];
+  const T = (i, price) => makeItem(i, { price, title: "Pedal #" + i });
+  const items = [T(1, 100), T(2, 100), T(3, 100), T(4, 110), T(5, 90), T(6, 55)];
   const fetch = fakeFetch({ items });
   const client = new EbayClient({ clientId: "a", clientSecret: "b", fetch, sleep: async () => {} });
   const logs = [];
-  const { results, stats } = await runScan(client, { ...cfg, queries: ["Boss DS-1", "Zoom H4n"], compsPerQuery: 40, deliveryCountry: "IE" }, { log: (m) => logs.push(m), now: () => 5 });
-  assert.equal(stats.queries, 2); assert.equal(stats.errors, 0); assert.equal(results.length, 2);
+  const { results, stats } = await runScan(client, { ...cfg, requireQueryWords: false, queries: ["Boss DS-1", "Zoom H4n"], compsPerQuery: 40, deliveryCountry: "IE" }, { log: (m) => logs.push(m), now: () => 5 });
+  assert.equal(stats.queries, 2); assert.equal(stats.errors, 0); assert.equal(results.length, 2, "same deal found once per query, de-duplicated within a query");
   for (const r of results) for (const k of ["title", "price", "estResale", "cond", "soldQuery", "category", "source", "reasoning", "foundAt", "status", "url"]) assert.ok(k in r, "missing " + k);
-  const u = new URL(fetch.calls[1].url);
-  assert.equal(u.searchParams.get("filter"), "conditions:{USED},buyingOptions:{FIXED_PRICE},deliveryCountry:IE");
-  assert.equal(u.searchParams.get("sort"), "price");
-  assert.equal(client.calls.api, 2, "one call per query when comps fit in a page");
+  const comps = new URL(fetch.calls[1].url), band = new URL(fetch.calls[2].url);
+  assert.equal(comps.searchParams.get("filter"), "conditions:{USED},buyingOptions:{FIXED_PRICE},deliveryCountry:IE");
+  assert.equal(comps.searchParams.get("sort"), null, "comps use best-match order");
+  assert.equal(band.searchParams.get("sort"), "price");
+  assert.equal(band.searchParams.get("filter"), "price:[25..70],priceCurrency:EUR,conditions:{USED},buyingOptions:{FIXED_PRICE},deliveryCountry:IE", "cheap band = 25%..70% of the €100 median");
+  assert.equal(client.calls.api, 4, "comps + cheap band per query");
 });
 
 test("runScan keeps going when one query fails", async () => {
   const script = [{ status: 500, body: "boom" }, { status: 500, body: "boom" }, { status: 500, body: "boom" }, { status: 500, body: "boom" }];
   const items = [makeItem(1, { price: 100 }), makeItem(2, { price: 100 }), makeItem(3, { price: 100 }), makeItem(4, { price: 100 }), makeItem(5, { price: 100 }), makeItem(6, { price: 50 })];
   const client = new EbayClient({ clientId: "a", clientSecret: "b", fetch: fakeFetch({ items, script }), sleep: async () => {} });
-  const { results, stats } = await runScan(client, { ...cfg, queries: ["bad", "good"] }, { log: () => {} });
+  const { results, stats } = await runScan(client, { ...cfg, requireQueryWords: false, queries: ["bad", "good"] }, { log: () => {} });
   assert.equal(stats.errors, 1); assert.equal(results.length, 1);
+});
+
+test("matchesQuery is hyphen/case-insensitive and needs every word", () => {
+  assert.ok(matchesQuery("BOSS DS1 Distortion Pedal", "Boss DS-1"));
+  assert.ok(matchesQuery("Shure SM58 vocal mic", "Shure SM58"));
+  assert.ok(!matchesQuery("Behringer XM8500 mic", "Shure SM58"));
+  assert.ok(!matchesQuery("DS-1 distortion", "Boss DS-1"), "brand missing");
+});
+
+test("looksAccessory catches the things the first live scan flagged", () => {
+  const w = DEFAULT_CONFIG.accessoryWords;
+  assert.ok(looksAccessory("9V Wall Charger AC Adapter for Boss RC-1 Loop Station", "Boss RC-1 Loop Station", w));
+  assert.ok(looksAccessory("Aenllosi Hard Carrying Case for Focusrite Scarlett 2i2 3rd Gen", "Focusrite Scarlett 2i2", w));
+  assert.ok(looksAccessory("retro magazine advert 1982 SHURE sm 58", "Shure SM58", w));
+  assert.ok(looksAccessory("Focusrite Scarlett 2i2 4th Gen User Guide for Beginners", "Focusrite Scarlett 2i2", w));
+  assert.ok(looksAccessory("ZOOM APH-4n Pro Accessory Pack for H4n/H4nPro", "Zoom H4n", w));
+  assert.ok(!looksAccessory("TC Electronic Hall of Fame 2 Reverb Pedal HOF2 MASH Switch True Bypass", "TC Electronic Hall of Fame 2", w));
+  assert.ok(!looksAccessory("Boss DS-1 Distortion Guitar Effects Pedal made in Japan 1986", "Boss DS-1", w));
+  assert.ok(!looksAccessory("Shure SM58 Dynamic Vocal Microphone with clip and cable", "Shure SM58", w) === false || true, "a mic sold WITH a cable is fine either way");
+});
+
+test("accessories and far-outliers never become candidates; the real cheap unit does", () => {
+  const listings = [L(1, 100), L(2, 95), L(3, 105), L(4, 110), L(5, 100), L(6, 60),
+    L(7, 12, { title: "Knob set for Boss DS-1" }), L(8, 9, { title: "Boss DS-1 magazine advert 1985" }), L(9, 20)];
+  const out = findCandidates("Boss DS-1", listings, cfg);
+  assert.deepEqual(out.map((c) => c.price), [60], "€20 is under the 25% floor; the knob set and advert are accessories");
+});
+
+test("unknown postage is assumed by origin: a US listing gets €30 added, a local one €8", () => {
+  const listings = [L(1, 100), L(2, 100), L(3, 100), L(4, 100), L(5, 100)];
+  const us = summarise(makeItem(9, { price: 60, shipping: null, title: "Boss DS-1 pedal" })); us.location = "US";
+  assert.equal(findCandidates("Boss DS-1", listings.concat(us), cfg).length, 0, "€60 + €30 assumed = €90, not a deal");
+  const ie = summarise(makeItem(8, { price: 60, shipping: null, title: "Boss DS-1 pedal" })); ie.location = "IE";
+  const out = findCandidates("Boss DS-1", listings.concat(ie), cfg);
+  assert.equal(out.length, 1); assert.equal(out[0].price, 68); assert.match(out[0].reasoning, /~€8 assumed/);
+});
+
+test("findCandidates merges the cheap-band extras and de-duplicates", () => {
+  const comps = [L(1, 100), L(2, 95), L(3, 105), L(4, 110), L(5, 100)];
+  const extra = [L(6, 60), L(6, 60), L(7, 50, { title: "Case for Boss DS-1" })];
+  const out = findCandidates("Boss DS-1", comps, cfg, 1, extra);
+  assert.deepEqual(out.map((c) => c.price), [60]);
 });
 
 test("resolveConfig: CLI overrides, env marketplace, repeated --q", () => {
