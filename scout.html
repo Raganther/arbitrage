@@ -915,17 +915,60 @@
     claude.use("db").then(function (db) {
       if (!db) { setChip("local", "", "Shared storage isn’t available in this view — finds stay in this browser."); return; }
       Store.mode = "db"; Store.db = db;
-      setChip("connecting…", "pending", "Waiting for Scout’s shared store");
-      var got = { finds: false, disc: false };
+      var got = { finds: false, disc: false }, perms = null, tries = 0;
       function arrived(which) { got[which] = true; if (got.finds && got.disc && !Store.dbReady) { Store.dbReady = true; dbNotice = ""; setChip("synced", "synced", "Connected to Scout’s shared store"); Store.emit(); } }
       function failed(e) {
         var code = e && e.code ? e.code : "error";
-        console.warn("db snapshot", e);
+        console.warn("db", e);
         Store.mode = "local"; Store.dbReady = false; Store.finds = Store.loadLocal();
         setChip("local · " + code, "blocked", "Shared store unavailable (" + code + ") — showing what’s saved in this browser.");
         dbNotice = "Couldn’t read Scout’s shared store (" + code + "). Reload the page; if it persists, the store is down or access changed.";
         Store.emit();
       }
+      function denied() {
+        Store.mode = "local"; Store.dbReady = false;
+        setChip("storage off", "blocked", "You declined shared storage for this page load. Reload to be asked again.");
+        dbNotice = "Shared storage was declined for this page load, so Discover can’t show the scanner’s finds. Reload the page and accept the storage prompt.";
+        Store.emit();
+      }
+      function withTimeout(promise, ms) {
+        return new Promise(function (res, rej) { var t = setTimeout(function () { rej({ code: "timeout" }); }, ms); promise.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); }); });
+      }
+      function readDirect() {
+        return withTimeout(Promise.all([db.collection("finds").get(), db.collection("discoveries").get()]), 8000).then(function (r) {
+          var f = [], d = [];
+          r[0].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; f.push(v); } });
+          r[1].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; d.push(v); } });
+          d.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
+          Store.finds = f; Store.discoveries = d; arrived("finds"); arrived("disc"); Store.emit();
+        });
+      }
+      // The chip is a button while we’re not synced: it asks for permission (the viewer only shows the
+      // storage dialog when asked outright) and then reads the store directly.
+      function connecting(label) {
+        setChip(label || "connecting…", "pending clickable", "Click to allow storage / retry");
+        id("storeChip").onclick = askThenRead;
+      }
+      function askThenRead() {
+        if (Store.dbReady || Store.mode !== "db") return;
+        setChip("asking…", "pending", "");
+        var ask = perms ? perms.request(["db"]) : Promise.resolve({ db: "granted" });
+        ask.then(function (r) {
+          if (r && r.db === "denied") { denied(); return; }
+          if (r && r.db === "unavailable") { setChip("local", "", "Shared storage isn’t available in this view."); Store.mode = "local"; Store.emit(); return; }
+          connecting("connecting…");
+          readDirect().catch(function (e) {
+            tries++;
+            if (e && e.code === "timeout") {
+              connecting("allow storage ▸");
+              dbNotice = "Scout is waiting for permission to read its shared store. Click <strong>allow storage</strong> at the top right and accept the prompt.";
+              Store.emit();
+            } else if (tries >= 6) failed(e);
+            else { connecting("connecting… (" + tries + ")"); setTimeout(askThenRead, 5000); }
+          });
+        }).catch(function () { connecting("allow storage ▸"); });
+      }
+      connecting("connecting…");
       db.collection("finds").onSnapshot(function (snap) {
         var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
         Store.finds = arr; arrived("finds"); Store.emit();
@@ -935,52 +978,10 @@
         arr.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
         Store.discoveries = arr; arrived("disc"); Store.emit();
       }, failed);
-      // Nothing after a few seconds: either the viewer’s permission prompt is still waiting for an answer,
-      // or the live feed is slow — in which case read the store directly and keep trying.
-      function readDirect() {
-        return Promise.all([db.collection("finds").get(), db.collection("discoveries").get()]).then(function (r) {
-          var f = [], d = [];
-          r[0].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; f.push(v); } });
-          r[1].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; d.push(v); } });
-          d.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
-          Store.finds = f; Store.discoveries = d; arrived("finds"); arrived("disc"); Store.emit();
-        });
-      }
-      var tries = 0;
-      function checkIn() {
-        if (got.finds || got.disc || Store.mode !== "db") return;
-        claude.use("permissions").then(function (p) {
-          var stateP = p ? p.state("db") : Promise.resolve("granted");
-          stateP.then(function (st) {
-            if (st === "denied") { denied(); return; }
-            if (st === "unavailable") { setChip("local", "", "Shared storage isn’t available in this view."); Store.mode = "local"; Store.emit(); return; }
-            if (st === "prompt" && p) {
-              setChip("allow storage ▸", "pending clickable", "Click to let Scout read and write its shared store");
-              dbNotice = "Scout needs your permission to read its shared store. Click <strong>allow storage</strong> at the top right and accept the prompt.";
-              Store.emit();
-              id("storeChip").onclick = function () {
-                setChip("asking…", "pending", "");
-                p.request(["db"]).then(function (r) { if (r && r.db === "denied") denied(); else { setChip("connecting…", "pending", "Permission granted; fetching data"); dbNotice = ""; Store.emit(); readDirect().catch(function () {}); setTimeout(checkIn, 4000); } });
-              };
-              return;
-            }
-            // granted but nothing delivered yet: read directly, and try again in a bit if that fails too
-            setChip("connecting…", "pending", "Permission granted; fetching data (try " + (tries + 1) + ")");
-            readDirect().catch(function (e) {
-              tries++;
-              if (tries >= 6) { failed(e || { code: "unavailable" }); return; }
-              setTimeout(checkIn, 5000);
-            });
-          }).catch(function () {});
-        }).catch(function () {});
-      }
-      setTimeout(checkIn, 3000);
-      function denied() {
-        Store.mode = "local"; Store.dbReady = false;
-        setChip("storage off", "blocked", "You declined shared storage for this page load. Reload to be asked again.");
-        dbNotice = "Shared storage was declined for this page load, so Discover can’t show the scanner’s finds. Reload the page and accept the storage prompt.";
-        Store.emit();
-      }
+      // Ask up front (never re-asks once granted), then read directly if the live feed is slow.
+      withTimeout(claude.use("permissions"), 4000).then(function (p) { perms = p || null; }, function () { perms = null; }).then(function () {
+        if (!got.finds || !got.disc) askThenRead();
+      });
     }).catch(function (e) { setChip("local", "", "Shared storage failed to load: " + (e && e.message ? e.message : e)); });
 
     claude.use("downloads").then(function (d) { if (d) { downloadsFn = d; updateExportBtn(); } }).catch(function () {});
