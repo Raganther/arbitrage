@@ -208,7 +208,8 @@
 
   /* discover */
   .disc-bar { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-  .disc-niche select { width: auto; min-width: 180px; }
+  .disc-cats-wrap { min-width: 0; }
+  .disc-cats-wrap .filters { margin-bottom: 0; }
   .disc-actions { display: flex; gap: 9px; align-items: center; }
   #importLabel { cursor: pointer; }
   .qwrap { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; padding: 13px 16px; margin-bottom: 14px; }
@@ -287,7 +288,7 @@
           <div class="row two">
             <div class="field"><label class="fl" for="item">Item</label><input type="text" id="item" placeholder="e.g. Boss DS-1 pedal"></div>
             <div class="field"><label class="fl" for="category">Category</label>
-              <select id="category"><option value="music-gear">Music gear</option><option value="books">Books</option><option value="vintage-clothing">Vintage clothing</option><option value="electronics">Electronics</option><option value="homeware">Homeware</option><option value="other">Other</option></select>
+              <select id="category"><option value="music-gear">Music gear</option><option value="trade-parts">Boiler &amp; trade parts</option><option value="tools">Tools</option><option value="homeware">Kitchen &amp; homeware</option><option value="electronics">Electronics</option><option value="books">Books</option><option value="vintage-clothing">Vintage clothing</option><option value="other">Other</option></select>
             </div>
           </div>
           <div class="field"><label class="fl" for="source">Source</label>
@@ -332,17 +333,17 @@
   <!-- DISCOVER -->
   <section class="panel" id="panel-discover" role="tabpanel" aria-labelledby="tab-discover" hidden>
     <div class="disc-bar">
-      <div class="disc-niche">
-        <label class="fl" for="nicheSel">Niche the scanner watches</label>
-        <select id="nicheSel"><option value="music-gear">Music gear</option><option value="books">Books</option><option value="vintage-clothing">Vintage clothing</option><option value="electronics">Electronics</option></select>
+      <div class="disc-cats-wrap">
+        <div class="fl">Browse by type</div>
+        <div class="filters" id="discCats" role="group" aria-label="Filter candidates by type"></div>
       </div>
       <div class="disc-actions">
-        <label class="btn primary" id="importLabel">⤓ Import scan results<input type="file" id="importFile" accept="application/json,.json" hidden></label>
-        <button class="btn ghost" id="scanBtn">Refresh samples</button>
+        <label class="btn ghost" id="importLabel" title="Only needed if you ran the scanner somewhere that can’t write to Scout directly">⤓ Import a scan file<input type="file" id="importFile" accept="application/json,.json" hidden></label>
+        <button class="btn ghost" id="scanBtn" hidden>Refresh samples</button>
       </div>
     </div>
     <div class="qwrap">
-      <div class="qlabel">Saved searches</div>
+      <div class="qlabel">Search notes for this type <span style="font-weight:400;text-transform:none;letter-spacing:0">— what the scanner runs lives in <code>scanner/configs/</code>; these are your own reminders</span></div>
       <div class="queries" id="queries"></div>
       <form class="qadd" id="qadd"><input type="text" id="qinput" placeholder="add a search term…" aria-label="Add a saved search"><button class="btn ghost" type="submit">Add</button></form>
     </div>
@@ -376,7 +377,7 @@
   var LS_KEY = "scout.finds.v1", THEME_KEY = "scout.theme";
   var STATUSES = ["watching", "bought", "listed", "sold", "passed"];
   var STATUS_LABEL = { watching: "Watching", bought: "Bought", listed: "Listed", sold: "Sold", passed: "Passed" };
-  var CAT_LABEL = { "music-gear": "Music gear", "books": "Books", "vintage-clothing": "Vintage clothing", "electronics": "Electronics", "homeware": "Homeware", "other": "Other" };
+  var CAT_LABEL = { "music-gear": "Music gear", "trade-parts": "Boiler & trade parts", "tools": "Tools", "homeware": "Kitchen & homeware", "electronics": "Electronics", "books": "Books", "vintage-clothing": "Vintage clothing", "other": "Other" };
 
   var EXAMPLES = [
     { id: "ex1", example: true, item: "Boss DS-1 distortion pedal", category: "music-gear", source: "Charity shop", buy: 18, sell: 55, postage: 8, feePct: 13, fixedFee: 0.35, packaging: 1, status: "sold", soldPrice: 60, createdAt: 6 },
@@ -649,11 +650,12 @@
   var DISC_KEY = "scout.discover.v1";
   var NICHE_QUERIES = {
     "music-gear": ["guitar pedal", "audio interface", "condenser mic", "studio monitor"],
+    "trade-parts": ["Vaillant ecoTEC PCB", "Worcester Bosch PCB", "Grundfos UPS2", "Ideal Logic fan"],
     "books": ["vintage penguin lot", "textbook current edition", "out of print hardback"],
     "vintage-clothing": ["vintage levis 501", "carhartt jacket", "wool overcoat"],
     "electronics": ["retro headphones", "film camera", "hi-fi amplifier"]
   };
-  var POSTAGE_DEF = { "music-gear": 8, "books": 4.5, "vintage-clothing": 6, "electronics": 8 };
+  var POSTAGE_DEF = { "music-gear": 8, "trade-parts": 8, "tools": 10, "homeware": 12, "books": 4.5, "vintage-clothing": 6, "electronics": 8 };
   var SAMPLE_CANDIDATES = {
     "music-gear": [
       { t: "TC Electronic Hall of Fame 2 reverb pedal, boxed", price: 34, est: 72, cond: "Used – fully working", q: "TC Electronic Hall of Fame 2", r: "Priced like a generic pedal; the HOF2 is a staple that holds its value." },
@@ -682,9 +684,9 @@
 
   var DISCDATA_KEY = "scout.discoveries.v1";
   var dbNotice = ""; // why the shared store isn't delivering, if it isn't
-  var disc = { niche: "music-gear", queries: {}, dismissed: {}, added: {} };
+  var disc = { niche: "music-gear", cat: "all", queries: {}, dismissed: {}, added: {} };
   (function loadDisc() { try { var r = JSON.parse(localStorage.getItem(DISC_KEY)); if (r) disc = Object.assign(disc, r); } catch (e) {} })();
-  function saveDisc() { try { localStorage.setItem(DISC_KEY, JSON.stringify({ niche: disc.niche, queries: disc.queries })); } catch (e) {} }
+  function saveDisc() { try { localStorage.setItem(DISC_KEY, JSON.stringify({ niche: disc.niche, cat: disc.cat, queries: disc.queries })); } catch (e) {} }
   function loadDiscLocal() { try { var r = JSON.parse(localStorage.getItem(DISCDATA_KEY)); if (Array.isArray(r)) return r; } catch (e) {} return []; }
   function saveDiscLocal() { try { localStorage.setItem(DISCDATA_KEY, JSON.stringify(Store.discoveries)); } catch (e) {} }
   function updateDiscovery(id0, patch) {
@@ -700,7 +702,7 @@
       if (!c || !c.title) return;
       var did = c.id || ("scan-" + (c.foundAt || now) + "-" + i);
       var doc = { title: String(c.title), price: num(c.price), estResale: num(c.estResale), cond: c.cond || "",
-        soldQuery: c.soldQuery || c.title, category: c.category || disc.niche, source: c.source || "eBay",
+        soldQuery: c.soldQuery || c.title, category: c.category || activeNiche(), source: c.source || "eBay",
         url: c.url || "", reasoning: c.reasoning || "", foundAt: num(c.foundAt) || now, status: "new" };
       if (Store.mode === "db") { Store.db.doc("discoveries/" + did).set(doc).catch(function () {}); }
       else { doc.id = did; var k = idx(Store.discoveries, did); if (k >= 0) Store.discoveries[k] = doc; else Store.discoveries.unshift(doc); }
@@ -720,8 +722,21 @@
   }
   function candScore(c) { return calc({ buy: c.price, sell: c.estResale, postage: candPostage(c), packaging: 1, feePct: 13, fixedFee: 0.35 }); }
 
+  function activeNiche() { return disc.cat && disc.cat !== "all" ? disc.cat : disc.niche; }
+  function catCounts(list) { var c = {}; list.forEach(function (d) { var k = d.category || "other"; c[k] = (c[k] || 0) + 1; }); return c; }
+  function renderCats(list, live) {
+    var counts = catCounts(list), keys = Object.keys(counts);
+    keys.sort(function (a, b) { return counts[b] - counts[a]; });
+    if (live && disc.cat !== "all" && !counts[disc.cat]) disc.cat = "all";
+    var html = '<button class="filt" data-c="all" aria-pressed="' + (disc.cat === "all") + '">All <span class="fc">' + list.length + '</span></button>' +
+      keys.map(function (k) { return '<button class="filt" data-c="' + esc(k) + '" aria-pressed="' + (disc.cat === k) + '">' + esc(CAT_LABEL[k] || k) + ' <span class="fc">' + counts[k] + '</span></button>'; }).join("");
+    id("discCats").innerHTML = html;
+    Array.prototype.forEach.call(id("discCats").querySelectorAll(".filt"), function (b) {
+      b.addEventListener("click", function () { disc.cat = b.getAttribute("data-c"); saveDisc(); renderDiscover(); });
+    });
+  }
   function renderQueries() {
-    var qs = queriesFor(disc.niche);
+    var qs = queriesFor(activeNiche());
     id("queries").innerHTML = qs.length ? qs.map(function (q, i) {
       return '<span class="qchip">' + esc(q) + '<button class="qx" data-i="' + i + '" aria-label="Remove ' + esc(q) + '">✕</button></span>';
     }).join("") : '<span class="hint" style="font-size:12.5px;color:var(--ink-faint)">No saved searches yet — add the terms the scanner should watch.</span>';
@@ -733,17 +748,22 @@
   function liveDiscoveries() { return (Store.discoveries || []).filter(function (d) { return d.status !== "dismissed" && !disc.dismissed[d.id]; }); }
 
   function renderDiscover() {
-    id("nicheSel").value = disc.niche;
-    renderQueries();
     var note = id("discNote");
     var live = liveDiscoveries();
     var cands;
     if (live.length) {
-      cands = live.slice();
+      renderCats(live, true);
+      renderQueries();
+      cands = disc.cat === "all" ? live.slice() : live.filter(function (d) { return (d.category || "other") === disc.cat; });
       note.className = "disc-note live";
-      note.innerHTML = "● <strong>Live</strong> — " + live.length + " opportunit" + (live.length === 1 ? "y" : "ies") + " your scanner wrote into Scout’s shared store. Newest scans appear here automatically.";
+      note.innerHTML = "● <strong>Live</strong> — " + live.length + " opportunit" + (live.length === 1 ? "y" : "ies") + " from the scanner" +
+        (disc.cat === "all" ? "" : ", showing " + cands.length + " in <strong>" + esc(CAT_LABEL[disc.cat] || disc.cat) + "</strong>") +
+        ". Refreshed every morning; anything you add or dismiss stays that way.";
     } else {
-      cands = sampleCandidates(disc.niche);
+      var all = Object.keys(SAMPLE_CANDIDATES).reduce(function (acc, n) { return acc.concat(sampleCandidates(n)); }, []);
+      renderCats(all, false);
+      renderQueries();
+      cands = disc.cat === "all" ? all : all.filter(function (c) { return c.category === disc.cat; });
       note.className = "disc-note";
       var lead = dbNotice ? '<span class="err">' + dbNotice + '</span><br>' :
         (Store.dbReady ? '● Connected to Scout’s shared store — nothing in it yet. The morning scan fills it. Meanwhile: ' : '');
@@ -751,7 +771,7 @@
     }
     cands = cands.filter(function (c) { return !disc.added[c.id] || true; });
     cands.sort(function (a, b) { return candScore(b).roi - candScore(a).roi; });
-    id("candidates").innerHTML = cands.length ? cands.map(candCard).join("") : '<div class="empty">No candidates. Run a scan or connect the scanner.</div>';
+    id("candidates").innerHTML = cands.length ? cands.map(candCard).join("") : '<div class="empty">Nothing in this type today.</div>';
     wireCandidates();
   }
 
@@ -772,7 +792,7 @@
 
   function candById(id0) {
     var live = liveDiscoveries(); for (var i = 0; i < live.length; i++) if (live[i].id === id0) return live[i];
-    var s = sampleCandidates(disc.niche); for (var j = 0; j < s.length; j++) if (s[j].id === id0) return s[j];
+    var s = Object.keys(SAMPLE_CANDIDATES).reduce(function (acc, n) { return acc.concat(sampleCandidates(n)); }, []); for (var j = 0; j < s.length; j++) if (s[j].id === id0) return s[j];
     return null;
   }
   function wireCandidates() {
@@ -780,7 +800,7 @@
     Array.prototype.forEach.call(host.querySelectorAll(".cadd"), function (b) {
       b.addEventListener("click", function () {
         var c = candById(b.getAttribute("data-id")); if (!c) return;
-        var f = { id: "f" + Date.now(), item: c.title, category: c.category || disc.niche, source: c.source || "eBay",
+        var f = { id: "f" + Date.now(), item: c.title, category: c.category || activeNiche(), source: c.source || "eBay",
           buy: c.price, sell: c.estResale, postage: candPostage(c), feePct: 13, fixedFee: 0.35, packaging: 1, status: "watching", createdAt: Date.now() };
         Store.put(f);
         disc.added[c.id] = true;
@@ -799,14 +819,13 @@
     });
   }
 
-  id("nicheSel").addEventListener("change", function () { disc.niche = id("nicheSel").value; saveDisc(); renderDiscover(); });
   id("scanBtn").addEventListener("click", function () {
     var b = id("scanBtn"), old = b.textContent; b.disabled = true; b.textContent = "Scanning…";
     setTimeout(function () { b.disabled = false; b.textContent = old; renderDiscover(); }, 650);
   });
   id("qadd").addEventListener("submit", function (e) {
     e.preventDefault(); var v = id("qinput").value.trim(); if (!v) return;
-    queriesFor(disc.niche).push(v); id("qinput").value = ""; saveDisc(); renderQueries();
+    queriesFor(activeNiche()).push(v); id("qinput").value = ""; saveDisc(); renderQueries();
   });
   id("importFile").addEventListener("change", function (e) {
     var file = e.target.files && e.target.files[0]; if (!file) return;
@@ -879,7 +898,7 @@
   // ---------- re-render on store change ----------
   function refreshAll() {
     id("boardCount").textContent = displayFinds().length;
-    var dn = liveDiscoveries().length || sampleCandidates(disc.niche).filter(function (c) { return !disc.added[c.id] && !disc.dismissed[c.id]; }).length;
+    var dn = liveDiscoveries().length || Object.keys(SAMPLE_CANDIDATES).reduce(function (n, k) { return n + sampleCandidates(k).filter(function (c) { return !disc.added[c.id] && !disc.dismissed[c.id]; }).length; }, 0);
     id("discCount").textContent = dn;
     if (!id("panel-discover").hidden) renderDiscover();
     if (!id("panel-board").hidden) renderBoard();
