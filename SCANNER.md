@@ -28,7 +28,8 @@ Production (no approval step; 5,000 calls/day) — no closed sold-price API need
 | `watch.mjs` | `npm run watch -- <url\|id>` — is one listing still live? (Build Plan stage 05.) |
 | `track.mjs` | `npm run track` — re-checks every listing a scan recorded; builds your own sold-price history and `data/market.json` (sell-through, est. sold, target buy per search). `npm run market` prints it without API calls. |
 | `sold.mjs` | `npm run sold -- "Boss DS-1" 65 70 62` — enter real sold prices you read off ebay.ie ("Sold items" filter). Verified prices outrank the tracker's inferences. |
-| `store.mjs` | The scanner's memory: `data/watchlist.json` + `data/market.json`, committed so a scheduled run continues where the last stopped. |
+| `store.mjs` | The scanner's memory on disk: `data/watchlist.json`, `market.json`, `sold.json`. |
+| `state.mjs` | That memory in Scout's database (collection `scanner`, one doc per search), so a scheduled run that can't push to git still carries tracking forward. `npm run state:export` / `state:import <dump>`. |
 | `test/` | `npm test` — 24 offline tests against a fake eBay, so the code is verified before you spend a call. |
 
 ### Setup — from developer account to first scan
@@ -108,6 +109,17 @@ The scanner reads `market.json` on its next run: anything at or under
 numbers. The longer it runs, the less it leans on asking prices. Budget: ~30
 calls per search per track run, so 7 searches ≈ 210 calls/day plus 14 for the
 scan, well inside 5,000. `npm run daily` does both.
+
+### Where the memory lives
+
+Two copies. On disk in `data/` (committed from an interactive session when
+convenient), and in Scout's database under the `scanner` collection: an
+`index`, `market`, `sold`, and one `watch-<search>` document per search (about
+30 entries each, far under the 256 KiB document cap). The morning routine
+**imports** that state before scanning (`read_db` on `scanner` → `npm run
+state:import -- <dump>`), runs, then **exports** it back (`npm run
+state:export` → `write_db` batches). Git push from a routine session is
+best-effort only; the database copy is the one that matters.
 
 ## Getting results into Scout
 

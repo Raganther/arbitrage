@@ -6,3 +6,5 @@
 node_modules/
 data/publish/
 data/existing/
+data/state-out/
+data/state-in/

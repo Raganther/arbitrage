@@ -17,6 +17,8 @@
     "market": "node track.mjs --report",
     "sold": "node sold.mjs",
     "publish": "node publish.mjs",
+    "state:export": "node state.mjs export",
+    "state:import": "node state.mjs import",
     "daily": "node scan.mjs --config configs/music-gear.json --config configs/trade-parts.json && node track.mjs",
     "test": "node --test test/*.test.mjs"
   }
