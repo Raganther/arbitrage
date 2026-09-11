@@ -899,6 +899,17 @@
 
   // ---------- utils ----------
   function id(x) { return document.getElementById(x); }
+  // Tolerate either snapshot shape: docs as an array or a function; entries with data() or a data field.
+  function snapDocs(snap) {
+    if (!snap) return [];
+    if (Array.isArray(snap)) return snap;
+    var d = snap.docs;
+    if (typeof d === "function") d = d.call(snap);
+    if (!d && typeof snap.forEach === "function") { d = []; snap.forEach(function (x) { d.push(x); }); }
+    return Array.isArray(d) ? d : [];
+  }
+  function docBody(x) { var v = typeof x.data === "function" ? x.data() : x.data; if (!v || typeof v !== "object") return null; var o = {}; for (var k in v) o[k] = v[k]; o.id = x.id; return o; }
+  function errText(e) { return e && e.code ? e.code : e && e.message ? String(e.message).slice(0, 60) : String(e || "error").slice(0, 60); }
   function setChip(label, cls, title) { id("storeLabel").textContent = label; id("storeChip").className = "store-chip" + (cls ? " " + cls : ""); id("storeChip").title = title || ""; id("storeChip").onclick = null; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
@@ -918,7 +929,7 @@
       var got = { finds: false, disc: false }, perms = null, tries = 0;
       function arrived(which) { got[which] = true; if (got.finds && got.disc && !Store.dbReady) { Store.dbReady = true; dbNotice = ""; setChip("synced", "synced", "Connected to Scout’s shared store"); Store.emit(); } }
       function failed(e) {
-        var code = e && e.code ? e.code : "error";
+        var code = errText(e);
         console.warn("db", e);
         Store.mode = "local"; Store.dbReady = false; Store.finds = Store.loadLocal();
         setChip("local · " + code, "blocked", "Shared store unavailable (" + code + ") — showing what’s saved in this browser.");
@@ -937,8 +948,8 @@
       function readDirect() {
         return withTimeout(Promise.all([db.collection("finds").get(), db.collection("discoveries").get()]), 8000).then(function (r) {
           var f = [], d = [];
-          r[0].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; f.push(v); } });
-          r[1].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; d.push(v); } });
+          snapDocs(r[0]).forEach(function (x) { var v = docBody(x); if (v) f.push(v); });
+          snapDocs(r[1]).forEach(function (x) { var v = docBody(x); if (v) d.push(v); });
           d.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
           Store.finds = f; Store.discoveries = d; arrived("finds"); arrived("disc"); Store.emit();
         });
@@ -964,20 +975,21 @@
               dbNotice = "Scout is waiting for permission to read its shared store. Click <strong>allow storage</strong> at the top right and accept the prompt.";
               Store.emit();
             } else if (tries >= 6) failed(e);
-            else { connecting("connecting… (" + tries + ")"); setTimeout(askThenRead, 5000); }
+            else { connecting("connecting… (" + tries + ")"); id("storeChip").title = "Retrying — last error: " + errText(e); setTimeout(askThenRead, 5000); }
           });
         }).catch(function () { connecting("allow storage ▸"); });
       }
       connecting("connecting…");
-      db.collection("finds").onSnapshot(function (snap) {
-        var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
+      function guard(fn) { return function (snap) { try { fn(snap); } catch (e) { failed(e); } }; }
+      db.collection("finds").onSnapshot(guard(function (snap) {
+        var arr = []; snapDocs(snap).forEach(function (x) { var v = docBody(x); if (v) arr.push(v); });
         Store.finds = arr; arrived("finds"); Store.emit();
-      }, failed);
-      db.collection("discoveries").onSnapshot(function (snap) {
-        var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
+      }), failed);
+      db.collection("discoveries").onSnapshot(guard(function (snap) {
+        var arr = []; snapDocs(snap).forEach(function (x) { var v = docBody(x); if (v) arr.push(v); });
         arr.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
         Store.discoveries = arr; arrived("disc"); Store.emit();
-      }, failed);
+      }), failed);
       // Ask up front (never re-asks once granted), then read directly if the live feed is slow.
       withTimeout(claude.use("permissions"), 4000).then(function (p) { perms = p || null; }, function () { perms = null; }).then(function () {
         if (!got.finds || !got.disc) askThenRead();
