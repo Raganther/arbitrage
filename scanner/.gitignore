@@ -4,3 +4,5 @@
 /scan-results.json
 /radar-results.json
 node_modules/
+data/publish/
+data/existing/

@@ -111,15 +111,19 @@ scan, well inside 5,000. `npm run daily` does both.
 
 ## Getting results into Scout
 
-Two ways the `scan-results.json` reaches your board:
+Two ways the candidates reach your board:
 
-1. **Import (built, works today).** Scout's **Discover** tab has an
-   *Import scan results* button — pick the file and the candidates appear as a
-   ranked live list you can add to your board. Reliable, manual, one click.
-2. **Fully automatic (later).** A scheduled Claude session (Routine) running where
-   eBay is reachable pushes each keeper straight into Scout's `db` at
-   `discoveries/<id>` via the artifact database tools — no import step, no
-   credentials in the page. Needs a runner with open egress to eBay.
+1. **Automatic (the morning routine).** After scanning, the routine dumps the
+   current `discoveries` collection (`read_db` with `out_dir`), runs
+   `npm run publish -- --existing data/existing`, and applies the batches in
+   `data/publish/manifest.json` with the Artifact tool's `write_db` (≤50 per
+   batch). `publish.mjs` skips ids already in Scout — so what you've *added* or
+   *dismissed* keeps its status — and queues deletes for candidates older than
+   14 days that you never touched, keeping the collection small. No file, no
+   import; open Discover and they're there.
+2. **Import (manual fallback).** Discover's *Import scan results* button takes
+   `data/scan-results.json` if you ever run the scanner somewhere without the
+   Artifact tools (your laptop, say).
 
 ## Discovery document schema
 
