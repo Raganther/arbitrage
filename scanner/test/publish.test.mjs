@@ -15,10 +15,12 @@ test("toDoc maps a scan result to the Scout discovery schema", () => {
 test("planWrites skips docs already present, de-duplicates, deletes stale untouched ones", () => {
   const now = 100 * DAY;
   const results = [c("a"), c("b"), c("b"), c("c")];
-  const existing = { b: { status: "added", foundAt: now - 20 * DAY }, old: { status: "new", foundAt: now - 20 * DAY }, kept: { status: "dismissed", foundAt: now - 20 * DAY }, fresh: { status: "new", foundAt: now - 2 * DAY } };
-  const { sets, deletes } = planWrites(results, existing, { now });
+  const existing = { b: { status: "added", foundAt: now - 20 * DAY }, old: { status: "new", foundAt: now - 20 * DAY }, kept: { status: "dismissed", foundAt: now - 20 * DAY }, fresh: { status: "new", foundAt: now - 2 * DAY }, today: { status: "new", foundAt: now - 3600_000 } };
+  const { sets, deletes, updates } = planWrites(results, existing, { now });
   assert.deepEqual(sets.map((s) => s.doc_id), ["a", "c"]);
-  assert.deepEqual(deletes.map((d) => d.doc_id), ["old"], "only stale AND still 'new' AND not in today's scan");
+  assert.deepEqual(updates.map((u) => u.doc_id), ["b"], "b exists with different numbers → refreshed, status untouched");
+  assert.ok(!("status" in updates[0].data) && updates[0].data.estResale === 90);
+  assert.deepEqual(deletes.map((d) => d.doc_id).sort(), ["fresh", "old"], "still 'new', not in today's scan, older than a day");
 });
 
 test("chunk splits into batches of 50", () => {

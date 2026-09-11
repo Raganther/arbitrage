@@ -60,6 +60,10 @@ export const DEFAULT_CONFIG = {
     "screw", "screws", "gasket", "gaskets", "seal", "seals", "o-ring", "oring", "washer", "washers", "clip only", "harness only"],
   requireQueryWords: true,  // a candidate's title must contain every word of the query (Boss + DS-1)
   minFraction: 0.25,        // ignore listings under 25% of the median — never the real item
+  // Export sellers in these countries list systematically high (and postage/customs make them poor comps for an
+  // Irish buyer). When at least minNearComps comps come from elsewhere, the median uses only those.
+  farCountries: ["JP", "CN", "HK", "TW", "KR", "SG", "MY", "TH", "VN", "IN"],
+  minNearComps: 3,
   cheapBandLimit: 50,       // second, targeted search of the cheap band (1 extra call per query)
   // When a listing doesn't state postage ("calculated"), assume this much by origin so landed prices stay honest.
   homeCountry: "IE",
@@ -82,10 +86,21 @@ function looksBroken(title, words) {
 
 const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-/** Does the title contain every word of the query (hyphen/space-insensitive: "DS-1" matches "DS1")? */
+/**
+ * Does the title contain every word of the query? Hyphen/space-insensitive ("DS-1" matches "DS1", "SM 58"
+ * matches "SM58"), but a number must end where the query's number ends: "Hall of Fame 2" doesn't match
+ * "Hall of Fame 2010", "RC-1" doesn't match "RC-10".
+ */
 export function matchesQuery(title, q) {
-  const t = norm(title);
-  return String(q).split(/\s+/).filter(Boolean).every((w) => t.includes(norm(w)));
+  const t = String(title).toLowerCase();
+  return String(q).toLowerCase().split(/\s+/).filter(Boolean).every((w) => {
+    const parts = w.match(/[a-z]+|[0-9]+/g);
+    if (!parts) return true;
+    const body = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[^a-z0-9]?");
+    const lead = /^[0-9]/.test(w) ? "(^|[^0-9])" : "(^|[^a-z0-9])";
+    const tail = /[0-9]$/.test(w) ? "(?![0-9])" : "";   // a number must end where the query's number ends
+    return new RegExp(lead + body + tail).test(t);
+  });
 }
 
 /** Accessory/ephemera heuristics: "... for Boss RC-1", "case for", "manual", "magazine advert". */
@@ -121,7 +136,11 @@ export function relevant(listings, q, cfg) {
 export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now(), extra = [], market = null) {
   const clean = relevant(listings, q, cfg);
   if (clean.length < (cfg.minComps || 5)) return [];
-  const mid = median(clean.map((l) => l.landed));
+  const far = new Set(cfg.farCountries || []);
+  const near = clean.filter((l) => !far.has((l.location || "").toUpperCase()));
+  const useNear = near.length >= (cfg.minNearComps == null ? 3 : cfg.minNearComps) && near.length < clean.length;
+  const comps = useNear ? near : clean;
+  const mid = median(comps.map((l) => l.landed));
   const mk = market && market[q] && market[q].targetBuy ? market[q] : null;
   // With tracked sales data, the ceiling is the market's targetBuy; otherwise the discount-under-median rule.
   const threshold = mk ? Math.max(mk.targetBuy, mid * (1 - cfg.discount)) : mid * (1 - cfg.discount);
@@ -152,7 +171,8 @@ export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now
         itemId: l.itemId || "",
         endsAt: l.endsAt || "",
         reasoning: "Listed at €" + Math.round(l.price) + " (" + shipNote + "), ~" + under + "% under the €" +
-          Math.round(mid) + " median for \"" + q + "\" (" + clean.length + " comps" + (l.location ? ", ships from " + l.location : "") + ")." +
+          Math.round(mid) + " median for \"" + q + "\" (" + comps.length + " comps" + (useNear ? ", " + (clean.length - near.length) + " overseas asks excluded" : "") +
+          (l.location ? ", ships from " + l.location : "") + ")." +
           (mk && mk.estSold ? " Tracked sales say ~€" + mk.estSold + " (" + mk.sellThrough + "% sell-through); target buy ≤€" + mk.targetBuy + "." :
             mk ? " Target buy ≤€" + mk.targetBuy + " (proxy, no sales tracked yet)." : "") + " Confirm in sold listings.",
         foundAt: now,
@@ -190,10 +210,19 @@ export function resolveConfig(args, env = process.env) {
 }
 
 /** Run a scan with an injected client — the CLI wraps this; tests call it directly. */
-export async function runScan(client, cfg, { log = console.log, now = () => Date.now(), watchlist = null, market = null } = {}) {
+/** A query is a string or { q, exclude: [...] } — per-search words to drop (variants like "X4", "mini"). */
+export function normQuery(entry) { return typeof entry === "string" ? { q: entry, exclude: [] } : { q: String(entry.q), exclude: entry.exclude || [] }; }
+
+export async function runScan(client, cfg0, { log = console.log, now = () => Date.now(), watchlist = null, market = null } = {}) {
   const results = [];
   const stats = { queries: 0, listings: 0, candidates: 0, errors: 0, tracked: 0 };
-  for (const q of cfg.queries) {
+  for (const entry of cfg0.queries) {
+    const { q, exclude } = normQuery(entry);
+    const cfg = exclude.length ? { ...cfg0, excludeWords: (cfg0.excludeWords || []).concat(exclude.map((w) => w.toLowerCase())) } : cfg0;
+    if (watchlist && exclude.length) {
+      // Variants tracked before the exclusion existed would keep polluting this search's median — drop them.
+      for (let i = watchlist.length - 1; i >= 0; i--) if (watchlist[i].query === q && looksBroken(watchlist[i].title, cfg.excludeWords)) watchlist.splice(i, 1);
+    }
     stats.queries++;
     try {
       const filter = {
@@ -208,7 +237,9 @@ export async function runScan(client, cfg, { log = console.log, now = () => Date
       // 2) Deals: a targeted look at the cheap band under the median, cheapest first.
       let extra = [];
       if (comps.length >= (cfg.minComps || 5) && cfg.cheapBandLimit > 0) {
-        const mid = median(comps.map((l) => l.landed));
+        const far = new Set(cfg.farCountries || []);
+        const near = comps.filter((l) => !far.has((l.location || "").toUpperCase()));
+        const mid = median((near.length >= (cfg.minNearComps == null ? 3 : cfg.minNearComps) ? near : comps).map((l) => l.landed));
         const band = await client.search({
           q, limit: cfg.cheapBandLimit, sort: "price",
           filter: { ...filter, priceMin: Math.floor(mid * (cfg.minFraction == null ? 0.25 : cfg.minFraction)), priceMax: Math.ceil(mid * (1 - cfg.discount)), currency: cfg.currency || "EUR" },

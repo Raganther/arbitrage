@@ -69,9 +69,13 @@ eBay's **best-match** order, keeps only titles that contain every query word and
 aren't accessories or ephemera (cases, adapters, manuals, magazine adverts,
 clones…) or broken (by title *and* by eBay's condition field), and takes the
 **median landed price** (item + postage; when postage isn't stated it assumes
-€8 from Ireland, €15 from Europe, €30 from further away). Then it searches the
-**cheap band** — 25% to 70% of that median, cheapest first — and flags what's
-there (default: ≥30% under the median and ≥€15 gap). Each flag is a candidate —
+€8 from Ireland, €15 from Europe, €30 from further away). Export sellers (Japan, China, Hong Kong…) list systematically high, so when at
+least three comps come from elsewhere the median uses only those. A search can
+also carry its own exclusions (`{"q": "TC Electronic Hall of Fame 2", "exclude":
+["x4", "mini"]}`) so bigger/smaller variants don't inflate it, and a number in the
+query must end where it ends ("Hall of Fame 2" never matches "…2010"). Then it
+searches the **cheap band** — 25% to 70% of that median, cheapest first — and
+flags what's there (default: ≥30% under the median and ≥€15 gap). Each flag is a candidate —
 an underpriced listing relative to its peers — which you then verify against real
 **sold** comps in Scout. `estResale` is the median asking price, a proxy, never
 a guarantee. Two API calls per query, so a seven-query scan every hour is ~340

@@ -3,10 +3,48 @@
   "queries": [
     "Boss DS-1",
     "Shure SM58",
-    "Focusrite Scarlett 2i2",
-    "Boss RC-1 Loop Station",
+    {
+      "q": "Focusrite Scarlett 2i2",
+      "exclude": [
+        "solo",
+        "4i4",
+        "8i6",
+        "2i4",
+        "18i8",
+        "18i20"
+      ]
+    },
+    {
+      "q": "Boss RC-1 Loop Station",
+      "exclude": [
+        "rc-3",
+        "rc-5",
+        "rc-10",
+        "rc-30",
+        "rc-300",
+        "rc-500"
+      ]
+    },
     "Korg Volca Beats",
-    "TC Electronic Hall of Fame 2",
-    "Zoom H4n"
-  ]
+    {
+      "q": "TC Electronic Hall of Fame 2",
+      "exclude": [
+        "x4",
+        "mini",
+        "hall of fame 1",
+        "hof 1"
+      ]
+    },
+    {
+      "q": "Zoom H4n",
+      "exclude": [
+        "h4n pro",
+        "h5",
+        "h6",
+        "h1n",
+        "h2n"
+      ]
+    }
+  ],
+  "_note": "A query can be {q, exclude:[...]} \u2014 words that mark a different variant of the product (bigger/smaller model, other generation) so the median stays like-for-like."
 }

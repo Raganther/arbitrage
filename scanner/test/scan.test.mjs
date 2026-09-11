@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
-import { findCandidates, median, runScan, resolveConfig, matchesQuery, looksAccessory, DEFAULT_CONFIG } from "../scan.mjs";
+import { findCandidates, median, runScan, resolveConfig, matchesQuery, looksAccessory, normQuery, DEFAULT_CONFIG } from "../scan.mjs";
 import { EbayClient, summarise } from "../ebay.mjs";
 import { fakeFetch, makeItem } from "./fake-ebay.mjs";
 import { parseEnv, parseArgs } from "../env.mjs";
@@ -79,6 +79,10 @@ test("matchesQuery is hyphen/case-insensitive and needs every word", () => {
   assert.ok(matchesQuery("Shure SM58 vocal mic", "Shure SM58"));
   assert.ok(!matchesQuery("Behringer XM8500 mic", "Shure SM58"));
   assert.ok(!matchesQuery("DS-1 distortion", "Boss DS-1"), "brand missing");
+  assert.ok(!matchesQuery("TC Electronic Hall of Fame Reverb 2010", "TC Electronic Hall of Fame 2"), "2 must not match 2010");
+  assert.ok(matchesQuery("TC Electronic HOF2 Hall of Fame2 reverb", "TC Electronic Hall of Fame 2"), "Fame2 counts");
+  assert.ok(!matchesQuery("Boss RC-10R loop station", "Boss RC-1"), "RC-1 must not match RC-10");
+  assert.ok(matchesQuery("Zoom H4N handy recorder", "Zoom H4n") && matchesQuery("Shure SM-58", "Shure SM58"));
 });
 
 test("looksAccessory catches the things the first live scan flagged", () => {
@@ -133,4 +137,28 @@ test("config *Extra word lists extend the defaults rather than replacing them", 
   const c = resolveConfig(parseArgs(["--config", f]), {});
   assert.ok(c.excludeWords.includes("display") && c.excludeWords.includes("faulty"));
   assert.equal(c.accessoryWords.length, DEFAULT_CONFIG.accessoryWords.length);
+});
+
+test("per-query exclude words drop variants from comps and prune them from the watchlist", async () => {
+  const T = (i, price, title) => makeItem(i, { price, title });
+  const items = [T(1, 100, "TC Electronic Hall of Fame 2 reverb"), T(2, 100, "TC Electronic Hall of Fame 2 pedal"), T(3, 100, "Hall of Fame 2 TC Electronic"),
+    T(4, 110, "TC Electronic Hall of Fame 2 used"), T(5, 90, "TC Electronic Hall of Fame 2 boxed"), T(6, 494, "TC Electronic Hall of Fame 2 X4 8 presets"), T(7, 55, "TC Electronic Hall of Fame 2 reverb cheap")];
+  const client = new EbayClient({ clientId: "a", clientSecret: "b", fetch: fakeFetch({ items }), sleep: async () => {} });
+  const watchlist = [{ id: "old", query: "TC Electronic Hall of Fame 2", title: "TC Electronic Hall of Fame 2 X4", landed: 494, status: "active" }];
+  const cfg = { ...DEFAULT_CONFIG, queries: [{ q: "TC Electronic Hall of Fame 2", exclude: ["x4"] }], minComps: 5, cheapBandLimit: 0 };
+  const { results } = await runScan(client, cfg, { log: () => {}, watchlist });
+  assert.equal(results.length, 1); assert.equal(results[0].estResale, 100, "median without the X4");
+  assert.ok(!watchlist.some((e) => e.id === "old"), "the tracked X4 was pruned");
+  assert.deepEqual(normQuery("Boss DS-1"), { q: "Boss DS-1", exclude: [] });
+});
+
+test("median ignores overseas export asks when enough nearer comps exist", () => {
+  const L = (i, price, loc) => { const s = summarise(makeItem(i, { price, title: "TC Electronic Hall of Fame 2 #" + i })); s.location = loc; return s; };
+  const listings = [L(1, 100, "IE"), L(2, 114, "GB"), L(3, 114, "US"), L(4, 157, "US"), L(5, 167, "US"),
+    L(6, 181, "JP"), L(7, 205, "JP"), L(8, 222, "JP"), L(9, 246, "JP"), L(10, 314, "JP"), L(11, 90, "IE")];
+  const out = findCandidates("TC Electronic Hall of Fame 2", listings, { ...DEFAULT_CONFIG, discount: 0.3, minMarginEur: 15 });
+  assert.equal(out.length, 0, "€90–€100 is fair against the €114 near median, not a deal against the €181 all-comps median");
+  const deal = listings.concat([L(12, 60, "IE")]);
+  const out2 = findCandidates("TC Electronic Hall of Fame 2", deal, { ...DEFAULT_CONFIG, discount: 0.3, minMarginEur: 15 });
+  assert.equal(out2.length, 1); assert.equal(out2[0].estResale, 114); assert.match(out2[0].reasoning, /5 overseas asks excluded/);
 });
