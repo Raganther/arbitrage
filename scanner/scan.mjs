@@ -219,9 +219,9 @@ export async function runScan(client, cfg0, { log = console.log, now = () => Dat
   for (const entry of cfg0.queries) {
     const { q, exclude } = normQuery(entry);
     const cfg = exclude.length ? { ...cfg0, excludeWords: (cfg0.excludeWords || []).concat(exclude.map((w) => w.toLowerCase())) } : cfg0;
-    if (watchlist && exclude.length) {
-      // Variants tracked before the exclusion existed would keep polluting this search's median — drop them.
-      for (let i = watchlist.length - 1; i >= 0; i--) if (watchlist[i].query === q && looksBroken(watchlist[i].title, cfg.excludeWords)) watchlist.splice(i, 1);
+    if (watchlist) {
+      // Entries tracked before an exclusion existed would keep polluting this search's median — drop them.
+      for (let i = watchlist.length - 1; i >= 0; i--) if (watchlist[i].query === q && !relevant([watchlist[i]], q, cfg).length) watchlist.splice(i, 1);
     }
     stats.queries++;
     try {
@@ -291,6 +291,10 @@ async function main() {
       results.push(...r.results);
       for (const k of Object.keys(totals)) totals[k] += r.stats[k];
     }
+    // One entry per listing: when two searches flag the same item, keep the more conservative estimate.
+    const byId = new Map();
+    for (const r of results) { const k = r.id || r.url || r.title; const prev = byId.get(k); if (!prev || r.estResale < prev.estResale) byId.set(k, r); }
+    results = Array.from(byId.values());
     results.sort((a, b) => (b.estResale - b.price) - (a.estResale - a.price));
     saveWatchlist(watchlist, dir);
     console.log(`\n${totals.listings} listings sampled · ${totals.candidates} candidates · ${totals.tracked} new listings tracked (${watchlist.filter((e) => e.status === "active").length} active) · ${totals.errors} errors · ${client.calls.api} API calls (of ~5,000/day)`);
