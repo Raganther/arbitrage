@@ -74,8 +74,15 @@ least three comps come from elsewhere the median uses only those. A search can
 also carry its own exclusions (`{"q": "TC Electronic Hall of Fame 2", "exclude":
 ["x4", "mini"]}`) so bigger/smaller variants don't inflate it, and a number in the
 query must end where it ends ("Hall of Fame 2" never matches "…2010"). Then it
-searches the **cheap band** — 25% to 70% of that median, cheapest first — and
-flags what's there (default: ≥30% under the median and ≥€15 gap). Each flag is a candidate —
+searches the **cheap band** — 25% to 50% of that median, cheapest first — and
+flags what's there (default: ≥50% under the median asking and ≥€15 gap).
+
+**Why 50%, not 30%.** Verified sold prices entered on 11 Sep 2026 (Shure SM58,
+Scarlett 2i2 by generation, Ideal Logic fan 175569, Hall of Fame 2) showed used
+items *sell* for roughly 50–65% of the median *asking* price on ebay.ie —
+asking medians are inflated by trade sellers, export sellers and optimists. So
+"30% under asking" is about the sold price, i.e. no margin. The tracker's proxy
+now assumes sold ≈ 60% of median asking until real sales say otherwise. Each flag is a candidate —
 an underpriced listing relative to its peers — which you then verify against real
 **sold** comps in Scout. `estResale` is the median asking price, a proxy, never
 a guarantee. Two API calls per query, so a seven-query scan every hour is ~340

@@ -25,7 +25,7 @@ test("computeMarket: proxy until 3 sales, then tracked; sell-through and targetB
   const wl = [entry({ id: "a" }), entry({ id: "b", landed: 100 }), entry({ id: "c", landed: 120 })];
   let m = computeMarket(wl, T0 + 10 * DAY);
   assert.equal(m["Boss DS-1"].basis, "proxy"); assert.equal(m["Boss DS-1"].estSold, null);
-  assert.equal(m["Boss DS-1"].medianAsk, 100); assert.equal(m["Boss DS-1"].targetBuy, 43, "100 × 0.85 × 0.5");
+  assert.equal(m["Boss DS-1"].medianAsk, 100); assert.equal(m["Boss DS-1"].targetBuy, 30, "100 × 0.6 × 0.5");
   assert.equal(m["Boss DS-1"].sellThrough, null);
   wl.push(entry({ id: "d", status: "sold-likely", closedPrice: 80 }), entry({ id: "e", status: "sold-likely", closedPrice: 90 }),
     entry({ id: "f", status: "sold-likely", closedPrice: 100 }), entry({ id: "g", status: "expired" }));

@@ -142,7 +142,7 @@ test("config *Extra word lists extend the defaults rather than replacing them", 
 test("per-query exclude words drop variants from comps and prune them from the watchlist", async () => {
   const T = (i, price, title) => makeItem(i, { price, title });
   const items = [T(1, 100, "TC Electronic Hall of Fame 2 reverb"), T(2, 100, "TC Electronic Hall of Fame 2 pedal"), T(3, 100, "Hall of Fame 2 TC Electronic"),
-    T(4, 110, "TC Electronic Hall of Fame 2 used"), T(5, 90, "TC Electronic Hall of Fame 2 boxed"), T(6, 494, "TC Electronic Hall of Fame 2 X4 8 presets"), T(7, 55, "TC Electronic Hall of Fame 2 reverb cheap")];
+    T(4, 110, "TC Electronic Hall of Fame 2 used"), T(5, 90, "TC Electronic Hall of Fame 2 boxed"), T(6, 494, "TC Electronic Hall of Fame 2 X4 8 presets"), T(7, 45, "TC Electronic Hall of Fame 2 reverb cheap")];
   const client = new EbayClient({ clientId: "a", clientSecret: "b", fetch: fakeFetch({ items }), sleep: async () => {} });
   const watchlist = [{ id: "old", query: "TC Electronic Hall of Fame 2", title: "TC Electronic Hall of Fame 2 X4", landed: 494, status: "active" }];
   const cfg = { ...DEFAULT_CONFIG, queries: [{ q: "TC Electronic Hall of Fame 2", exclude: ["x4"] }], minComps: 5, cheapBandLimit: 0 };

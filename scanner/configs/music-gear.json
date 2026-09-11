@@ -4,14 +4,53 @@
     "Boss DS-1",
     "Shure SM58",
     {
-      "q": "Focusrite Scarlett 2i2",
+      "q": "Focusrite Scarlett 2i2 3rd Gen",
       "exclude": [
         "solo",
         "4i4",
         "8i6",
         "2i4",
         "18i8",
-        "18i20"
+        "18i20",
+        "studio",
+        "bundle",
+        "1st gen",
+        "2nd gen",
+        "4th gen",
+        "gen 1",
+        "gen 2",
+        "gen 3",
+        "gen 4",
+        "first gen",
+        "second gen",
+        "third gen",
+        "fourth gen",
+        "third"
+      ]
+    },
+    {
+      "q": "Focusrite Scarlett 2i2 4th Gen",
+      "exclude": [
+        "solo",
+        "4i4",
+        "8i6",
+        "2i4",
+        "18i8",
+        "18i20",
+        "studio",
+        "bundle",
+        "1st gen",
+        "2nd gen",
+        "3rd gen",
+        "gen 1",
+        "gen 2",
+        "gen 3",
+        "gen 4",
+        "first gen",
+        "second gen",
+        "third gen",
+        "fourth gen",
+        "fourth"
       ]
     },
     {
@@ -46,5 +85,6 @@
       ]
     }
   ],
-  "_note": "A query can be {q, exclude:[...]} \u2014 words that mark a different variant of the product (bigger/smaller model, other generation) so the median stays like-for-like."
+  "_note": "A query can be {q, exclude:[...]} \u2014 words that mark a different variant of the product (bigger/smaller model, other generation) so the median stays like-for-like.",
+  "_note2": "Scarlett 2i2 is split by generation: verified sold prices (Sep 2026) are ~\u20ac55 (1st), ~\u20ac65 (2nd), ~\u20ac95 (3rd), ~\u20ac165 (4th) \u2014 one blended search made 1st-gen units look like bargains."
 }

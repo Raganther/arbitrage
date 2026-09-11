@@ -47,7 +47,10 @@ export const DEFAULT_CONFIG = {
   conditions: ["USED"],  // USED | NEW | UNSPECIFIED — comps must be like-for-like
   compsPerQuery: 40,     // listings to sample when computing the median (1 API call ≤ 200)
   minComps: 5,           // fewer than this and the median isn't trusted
-  discount: 0.30,        // flag listings >= 30% below the median landed price
+  // Calibrated on verified sold prices (Sep 2026: SM58, Scarlett 2i2, Ideal Logic fan, Hall of Fame 2):
+  // used items SELL for roughly 50–65% of the median ASKING price. So "30% under asking" ≈ the sold
+  // price ≈ zero margin. A candidate must be at least 50% under the median asking to be worth a look.
+  discount: 0.50,        // flag listings >= 50% below the median landed asking price
   minMarginEur: 15,      // and at least this many EUR below it
   maxPerQuery: 3,        // keep at most this many candidates per query
   excludeWords: ["parts", "spares", "repair", "faulty", "broken", "not working", "for parts", "case only", "box only", "manual only"],

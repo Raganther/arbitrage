@@ -39,7 +39,7 @@ export function classify(entry, s, now = Date.now()) {
 /** Per-query market read from the watchlist plus any verified sold prices (sold.json). Pure; tested. */
 export function computeMarket(watchlist, now = Date.now(), cfg = {}, verified = {}) {
   const buyFraction = cfg.buyFraction == null ? 0.5 : cfg.buyFraction;
-  const askToSold = cfg.askToSold == null ? 0.85 : cfg.askToSold;
+  const askToSold = cfg.askToSold == null ? 0.6 : cfg.askToSold;   // verified Sep 2026: sold ≈ 60% of median asking
   const minClosed = cfg.minClosed == null ? 3 : cfg.minClosed;
   const byQ = {};
   for (const e of watchlist) (byQ[e.query] = byQ[e.query] || []).push(e);
@@ -80,7 +80,7 @@ export function printMarket(market) {
       String(r.expired).padStart(9) + String(r.removed).padStart(9) + f(r.sellThrough, "%").padStart(11) + f(r.medianAsk, "€").padStart(12) +
       (r.estSold == null ? "  proxy" : f(r.estSold, "€") + (r.basis === "verified" ? "✓" : " ")).padStart(10) + f(r.targetBuy, "€").padStart(12));
   }
-  console.log("\nest-sold: ✓ = from sold prices you entered (node sold.mjs); otherwise median asking of tracked listings that ended early (sold).\n'proxy' = not enough sales yet; target-buy then uses 85% of median asking.\ntarget-buy = half the estimated sold price: the most you pay, all-in, to keep ~30%+ margin after fees and postage.");
+  console.log("\nest-sold: ✓ = from sold prices you entered (node sold.mjs); otherwise median asking of tracked listings that ended early (sold).\n'proxy' = not enough sales yet; target-buy then assumes sold ≈ 60% of median asking (calibrated on verified models).\ntarget-buy = half the estimated sold price: the most you pay, all-in, to keep ~30%+ margin after fees and postage.");
 }
 
 async function main() {

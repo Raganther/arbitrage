@@ -234,6 +234,11 @@
   .cand-main .clinks { margin-top: 7px; display: flex; gap: 8px; flex-wrap: wrap; }
   .cand-main .clinks a { font-size: 12px; color: var(--accent); text-decoration: none; border: 1px solid var(--hair-strong); border-radius: 7px; padding: 3px 9px; }
   .cand-main .clinks a:hover { border-color: var(--accent); }
+  .clinks a.sold, .find .clinks a.sold { font-weight: 600; color: #fff; background: var(--accent); border-color: var(--accent); }
+  :root[data-theme="dark"] .clinks a.sold { color: #10160F; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .clinks a.sold { color: #10160F; } }
+  .find .clinks { margin-top: 9px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .find .clinks a { font-size: 12px; color: var(--accent); text-decoration: none; border: 1px solid var(--hair-strong); border-radius: 7px; padding: 3px 9px; }
   .cand-right { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
   .cand-fig { text-align: right; }
   .cand-fig .p { font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -544,11 +549,13 @@
       : '<label class="sr" for="st-' + f.id + '">Status</label><select class="st-sel" id="st-' + f.id + '" data-id="' + f.id + '">' + opts + '</select>' +
         '<span class="sold-in" data-id="' + f.id + '"' + (f.status === "sold" ? ' style="display:inline-flex"' : '') + '>sold for €<input type="number" min="0" step="0.5" class="sold-price" data-id="' + f.id + '" value="' + (f.soldPrice != null ? esc(f.soldPrice) : '') + '" placeholder="' + Math.round(num(f.sell)) + '"></span>' +
         '<button class="del" data-id="' + f.id + '" title="Delete" aria-label="Delete find">✕</button>';
+    var fq = partNumber(f.item) || f.soldQuery || f.item || "";
+    var links = fq ? '<div class="clinks"><a class="sold" href="' + esc(ebayLink(fq)) + '" target="_blank" rel="noopener" title="eBay.ie, Sold items filter, searching “' + esc(fq) + '”">Sold prices ↗</a>' + (f.url ? '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">The listing ↗</a>' : '') + '</div>' : '';
     return '<div class="find">' +
       '<div class="find-top"><div><div class="name">' + esc(f.item || "Untitled") + (f.example ? ' <span class="ex-tag">example</span>' : '') + '</div>' +
       '<div class="meta">' + esc(CAT_LABEL[f.category] || f.category || "") + ' · ' + esc(f.source || "") + '</div></div>' +
       '<span class="stpill ' + f.status + '">' + STATUS_LABEL[f.status] + '</span></div>' +
-      '<div class="find-money">' + moneyCells + '</div>' +
+      '<div class="find-money">' + moneyCells + '</div>' + links +
       '<div class="find-ctl">' + ctl + '</div></div>';
   }
   function wireCards() {
@@ -775,16 +782,21 @@
     wireCandidates();
   }
 
+  function partNumber(title) {
+    var m = String(title || "").match(/\b(0{2}[0-9]{8}|[0-9]{6,10})\b/);   // 0020136629 / 175569 / 87161068470
+    return m ? m[1] : null;
+  }
+  function soldQueryFor(c) { return partNumber(c.title) || c.soldQuery || c.title; }
   function candCard(c) {
     var r = candScore(c), v = verdict(r);
     var added = disc.added[c.id] || c.status === "added";
-    var q = c.soldQuery || c.title;
+    var q = soldQueryFor(c);
     return '<div class="cand' + (added ? ' added' : '') + '">' +
       '<div class="cand-rank"><span class="badge ' + v + '">' + (v === "buy" ? "Buy" : v === "maybe" ? "Maybe" : "Skip") + '</span></div>' +
       '<div class="cand-main"><div class="ct">' + esc(c.title) + '</div>' +
       '<div class="cm">' + esc(c.source || "eBay") + ' · ' + esc(c.cond || "used") + ' · <span class="mono">' + eur0(c.price) + ' → ' + eur0(c.estResale) + '</span> est. resale</div>' +
       (c.reasoning ? '<div class="cr">' + esc(c.reasoning) + '</div>' : '') +
-      '<div class="clinks"><a href="' + esc(ebayLink(q)) + '" target="_blank" rel="noopener">Check eBay sold ↗</a><a href="' + esc(c.url || ebayActive(q)) + '" target="_blank" rel="noopener">' + (c.url ? "View listing ↗" : "Live listings ↗") + '</a></div></div>' +
+      '<div class="clinks"><a class="sold" href="' + esc(ebayLink(q)) + '" target="_blank" rel="noopener" title="eBay.ie, Sold items filter, searching “' + esc(q) + '”">Sold prices ↗</a><a href="' + esc(c.url || ebayActive(q)) + '" target="_blank" rel="noopener">' + (c.url ? "This listing ↗" : "Live listings ↗") + '</a></div></div>' +
       '<div class="cand-right"><div class="cand-fig"><span class="p ' + (r.net >= 0 ? 'pos' : 'neg') + '">' + eur0(r.net) + '</span><span class="roi"> · ' + pct(r.roi) + ' ROI</span></div>' +
       (added ? '<span class="cand-added">✓ On board</span>' : '<div class="cand-actions"><button class="btn primary cadd" data-id="' + esc(c.id) + '">Add</button><button class="btn ghost cdis" data-id="' + esc(c.id) + '">Dismiss</button></div>') +
       '</div></div>';
@@ -801,7 +813,8 @@
       b.addEventListener("click", function () {
         var c = candById(b.getAttribute("data-id")); if (!c) return;
         var f = { id: "f" + Date.now(), item: c.title, category: c.category || activeNiche(), source: c.source || "eBay",
-          buy: c.price, sell: c.estResale, postage: candPostage(c), feePct: 13, fixedFee: 0.35, packaging: 1, status: "watching", createdAt: Date.now() };
+          buy: c.price, sell: c.estResale, postage: candPostage(c), feePct: 13, fixedFee: 0.35, packaging: 1, status: "watching", createdAt: Date.now(),
+          url: c.url || "", soldQuery: soldQueryFor(c) };
         Store.put(f);
         disc.added[c.id] = true;
         if (!c.sample) updateDiscovery(c.id, { status: "added" });
