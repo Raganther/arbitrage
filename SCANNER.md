@@ -45,9 +45,11 @@ Production (no approval step; 5,000 calls/day) — no closed sold-price API need
    token lifetime, the number of matching listings, and five of them. Sandbox
    often returns *zero* results for real product names — that's normal, it's
    fake data; the point is the token + call succeeded.
-4. **Scan.** `npm run scan` uses the `CONFIG` block in `scan.mjs`; or pass
-   queries straight in: `node scan.mjs --q "Boss DS-1" --q "Zoom H4n" --niche music-gear`;
-   or keep a niche in a JSON file: `node scan.mjs --config pedals.json`.
+4. **Scan.** `npm run daily` scans every niche that's switched on (see
+   `configs/`: currently music-gear and trade-parts) and then runs the tracker.
+   Or pass queries straight in: `node scan.mjs --q "Boss DS-1" --q "Zoom H4n" --niche music-gear`;
+   or one niche file: `node scan.mjs --config configs/trade-parts.json`.
+   `--config` repeats, and results merge into one `data/scan-results.json`.
 5. **Import.** Scout → Discover → *Import scan results* → pick `scan-results.json`.
 
 Needs Node 18+ and a machine that can reach `api.ebay.com` — your own laptop

@@ -1,4 +1,6 @@
 import { test } from "node:test";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
 import { findCandidates, median, runScan, resolveConfig, matchesQuery, looksAccessory, DEFAULT_CONFIG } from "../scan.mjs";
 import { EbayClient, summarise } from "../ebay.mjs";
@@ -122,4 +124,13 @@ test("resolveConfig: CLI overrides, env marketplace, repeated --q", () => {
 test("parseEnv / parseArgs basics", () => {
   assert.deepEqual(parseEnv('# c\nA=1\nB="two words"\nexport C=3 # trailing\n\nbad\n'), { A: "1", B: "two words", C: "3" });
   assert.deepEqual(parseArgs(["--dry-run", "--out=x.json", "pos", "--sandbox"]), { _: ["pos"], "dry-run": true, out: "x.json", sandbox: true });
+});
+
+test("config *Extra word lists extend the defaults rather than replacing them", () => {
+  const { writeFileSync } = require("node:fs");
+  const f = "/tmp/claude-0/-home-user-arbitrage/5b01129f-9330-515c-bfd8-1ccc3ad9a138/scratchpad/cfg-test.json";
+  writeFileSync(f, JSON.stringify({ niche: "trade-parts", queries: ["Vaillant PCB"], excludeWordsExtra: ["display"] }));
+  const c = resolveConfig(parseArgs(["--config", f]), {});
+  assert.ok(c.excludeWords.includes("display") && c.excludeWords.includes("faulty"));
+  assert.equal(c.accessoryWords.length, DEFAULT_CONFIG.accessoryWords.length);
 });

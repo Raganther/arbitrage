@@ -56,7 +56,8 @@ export const DEFAULT_CONFIG = {
     "manual", "guide", "book", "advert", "magazine", "cutting", "brochure", "catalog", "sticker", "decal", "knob", "knobs", "footswitch cap",
     "replacement", "spare", "stand", "clip", "mount", "bracket", "strap", "windscreen", "foam", "grille", "grill", "capsule", "cartridge",
     "battery", "batteries", "screen protector", "skin", "accessory pack", "accessories", "kit for", "compatible with", "fits", "holder",
-    "dvd", "tutorial", "dictionary", "clone", "clones", "copy", "replica", "style", "poster", "print", "t-shirt", "tshirt", "mug", "keyring"],
+    "dvd", "tutorial", "dictionary", "clone", "clones", "copy", "replica", "style", "poster", "print", "t-shirt", "tshirt", "mug", "keyring",
+    "screw", "screws", "gasket", "gaskets", "seal", "seals", "o-ring", "oring", "washer", "washers", "clip only", "harness only"],
   requireQueryWords: true,  // a candidate's title must contain every word of the query (Boss + DS-1)
   minFraction: 0.25,        // ignore listings under 25% of the median — never the real item
   cheapBandLimit: 50,       // second, targeted search of the cheap band (1 extra call per query)
@@ -171,7 +172,13 @@ export function sampleResults(now = Date.now()) {
 
 export function resolveConfig(args, env = process.env) {
   let cfg = { ...DEFAULT_CONFIG };
-  if (args.config) cfg = { ...cfg, ...JSON.parse(readFileSync(String(args.config), "utf8")) };
+  if (args.config) {
+    const file = JSON.parse(readFileSync(String(args.config), "utf8"));
+    cfg = { ...cfg, ...file };
+    // *Extra lists add to the defaults instead of replacing them.
+    if (file.excludeWordsExtra) cfg.excludeWords = DEFAULT_CONFIG.excludeWords.concat(file.excludeWordsExtra);
+    if (file.accessoryWordsExtra) cfg.accessoryWords = DEFAULT_CONFIG.accessoryWords.concat(file.accessoryWordsExtra);
+  }
   if (args.niche) cfg.niche = String(args.niche);
   if (args.marketplace) cfg.marketplace = String(args.marketplace);
   else if (!args.config && env.EBAY_MARKETPLACE) cfg.marketplace = env.EBAY_MARKETPLACE;
@@ -231,24 +238,32 @@ async function main() {
   if (args.production) process.env.EBAY_ENV = "production";
   const dir = args.data ? String(args.data) : undefined;
   const out = args.out ? String(args.out) : dataPath("scan-results.json", dir);
-  const cfg = resolveConfig(args);
 
   let results;
   if (args["dry-run"]) {
     console.log("[dry-run] no API calls; writing a sample result.");
     results = sampleResults();
   } else {
+    // One config per --config (repeatable); none given → the CONFIG block above (+ any --q/--niche overrides).
+    const configFiles = args.config ? [].concat(args.config).map(String) : [null];
+    const cfgs = configFiles.map((f) => resolveConfig({ ...args, config: f || undefined }));
     let client;
-    try { client = clientFromEnv(process.env, { marketplace: cfg.marketplace, log: (m) => console.log("  · " + m) }); }
+    try { client = clientFromEnv(process.env, { marketplace: cfgs[0].marketplace, log: (m) => console.log("  · " + m) }); }
     catch (e) { console.error(e.message + "\n  Copy .env.example to .env and fill it in, or run with --dry-run."); process.exit(1); }
-    console.log(`Scanning "${cfg.niche}" on ${cfg.marketplace} (${client.env}) — ${cfg.queries.length} queries, ≥${Math.round(cfg.discount * 100)}% under median, ≥€${cfg.minMarginEur} gap`);
     const watchlist = loadWatchlist(dir), market = loadMarket(dir);
-    const r = await runScan(client, cfg, { watchlist, market });
-    results = r.results;
+    results = [];
+    const totals = { listings: 0, candidates: 0, tracked: 0, errors: 0 };
+    for (const c of cfgs) {
+      client.marketplace = c.marketplace;
+      console.log(`\nScanning "${c.niche}" on ${c.marketplace} (${client.env}) — ${c.queries.length} queries, ≥${Math.round(c.discount * 100)}% under median, ≥€${c.minMarginEur} gap`);
+      const r = await runScan(client, c, { watchlist, market });
+      results.push(...r.results);
+      for (const k of Object.keys(totals)) totals[k] += r.stats[k];
+    }
+    results.sort((a, b) => (b.estResale - b.price) - (a.estResale - a.price));
     saveWatchlist(watchlist, dir);
-    console.log(`\n${r.stats.listings} listings sampled · ${r.stats.candidates} candidates · ${r.stats.tracked} new listings tracked (${watchlist.filter((e) => e.status === "active").length} active) · ${r.stats.errors} errors · ${client.calls.api} API calls (of ~5,000/day)`);
+    console.log(`\n${totals.listings} listings sampled · ${totals.candidates} candidates · ${totals.tracked} new listings tracked (${watchlist.filter((e) => e.status === "active").length} active) · ${totals.errors} errors · ${client.calls.api} API calls (of ~5,000/day)`);
     if (!market) console.log("No tracked sales yet — run `node track.mjs` daily; after a couple of weeks estResale switches from median-asking to tracked sales.");
-    if (r.stats.errors === r.stats.queries && r.stats.queries) process.exit(1);
   }
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, JSON.stringify(results, null, 2));
