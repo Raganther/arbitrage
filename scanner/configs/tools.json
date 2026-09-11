@@ -1,0 +1,19 @@
+{
+  "niche": "tools",
+  "queries": [
+    "Record vice",
+    "Stanley No 4 plane",
+    "Stanley No 5 plane",
+    "Makita DHP482",
+    "DeWalt DCD796",
+    "Festool sander",
+    "Festool track saw",
+    "Hilti drill"
+  ],
+  "minMarginEur": 15,
+  "assumedPostage": {
+    "home": 10,
+    "eu": 20,
+    "other": 40
+  }
+}

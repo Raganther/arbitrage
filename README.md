@@ -6,6 +6,10 @@ few-hours-a-week, ROI-driven start in Ireland.
 
 ## Demand Radar — pick the niche first (Phase 4)
 
+**[`NICHES.md`](./NICHES.md)** — measured niche research (52 searches on ebay.ie): which
+domains have price room, thin competition, and a structural edge for an Irish
+seller, with ready scan configs in `scanner/configs/`.
+
 **[`demand-radar.html`](./demand-radar.html)** — score whether a niche is worth
 entering *before* you spend anything.
 

@@ -1,0 +1,17 @@
+{
+  "niche": "homeware",
+  "queries": [
+    "Bugaboo Cameleon",
+    "Bugaboo Fox",
+    "Bugaboo Bee",
+    "Silver Cross pram",
+    "Stokke Tripp Trapp",
+    "Babyzen Yoyo"
+  ],
+  "minMarginEur": 20,
+  "assumedPostage": {
+    "home": 15,
+    "eu": 35,
+    "other": 80
+  }
+}

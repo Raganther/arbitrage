@@ -1,0 +1,53 @@
+# domain | specific search (model-level, so the numbers mean something)
+music-gear | Boss DS-1
+music-gear | Shure SM58
+music-gear | Fender Stratocaster Mexico
+music-gear | Yamaha P-45
+hifi | Marantz amplifier
+hifi | NAD 3020
+hifi | Technics SL-1200
+hifi | Rega Planar 3
+hifi | Bowers Wilkins speakers
+cameras | Canon AE-1
+cameras | Pentax K1000
+cameras | Olympus OM-1
+cameras | Canon Powershot
+cameras | Nikon Coolpix
+retro-games | Game Boy Advance SP
+retro-games | Nintendo DS Lite
+retro-games | PlayStation 2 console
+retro-games | Nintendo 64 console
+retro-games | Pokemon Emerald
+vintage-computing | ThinkPad X220
+vintage-computing | Amiga 500
+vintage-computing | iPod Classic
+tools | Makita drill 18V
+tools | DeWalt DCD796
+tools | Stanley No 4 plane
+tools | Festool sander
+tools | Record vice
+kitchen | Le Creuset casserole
+kitchen | Gaggia Classic
+kitchen | KitchenAid mixer
+kitchen | Dualit toaster
+kitchen | Rancilio Silvia
+clothing | Barbour Bedale
+clothing | Dr Martens 1460
+clothing | Levis 501 vintage
+clothing | Carhartt jacket
+clothing | Patagonia fleece
+trade-parts | Vaillant PCB
+trade-parts | Worcester Bosch PCB
+trade-parts | Grundfos pump
+watches | Seiko 5 automatic
+watches | Casio G-Shock
+watches | Tissot
+collectibles | Lego Technic
+collectibles | Warhammer 40k
+sport | Ireland rugby jersey
+sport | GAA jersey vintage
+sport | Brooks saddle
+sport | Shimano 105 groupset
+garden | Stihl chainsaw
+garden | Honda lawnmower
+baby | Bugaboo pram

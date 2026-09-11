@@ -1,0 +1,18 @@
+{
+  "niche": "trade-parts",
+  "queries": [
+    "Vaillant ecoTEC PCB",
+    "Vaillant PCB",
+    "Worcester Bosch PCB",
+    "Baxi PCB",
+    "Ideal Logic PCB",
+    "Grundfos UPS2",
+    "Honeywell zone valve"
+  ],
+  "minMarginEur": 15,
+  "assumedPostage": {
+    "home": 8,
+    "eu": 15,
+    "other": 30
+  }
+}

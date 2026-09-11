@@ -1,0 +1,19 @@
+{
+  "niche": "homeware",
+  "queries": [
+    "Le Creuset casserole",
+    "Le Creuset skillet",
+    "Dualit toaster",
+    "Dualit kettle",
+    "Gaggia Classic",
+    "KitchenAid mixer",
+    "Rancilio Silvia",
+    "Sage Barista Express"
+  ],
+  "minMarginEur": 15,
+  "assumedPostage": {
+    "home": 12,
+    "eu": 25,
+    "other": 45
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "niche": "electronics",
+  "queries": [
+    "Marantz amplifier",
+    "NAD 3020",
+    "Technics SL-1200",
+    "Rega Planar 3",
+    "Bowers Wilkins 686",
+    "Cambridge Audio CXA",
+    "Arcam amplifier"
+  ],
+  "minMarginEur": 20,
+  "assumedPostage": {
+    "home": 12,
+    "eu": 25,
+    "other": 50
+  }
+}
