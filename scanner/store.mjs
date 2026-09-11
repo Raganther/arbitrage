@@ -17,6 +17,8 @@ function writeJson(path, value) {
 
 export function loadWatchlist(dir) { return readJson(dataPath("watchlist.json", dir), []); }
 export function saveWatchlist(list, dir) { writeJson(dataPath("watchlist.json", dir), list); }
+export function loadSold(dir) { return readJson(dataPath("sold.json", dir), {}); }
+export function saveSold(sold, dir) { writeJson(dataPath("sold.json", dir), sold); }
 export function loadMarket(dir) { return existsSync(dataPath("market.json", dir)) ? readJson(dataPath("market.json", dir), null) : null; }
 export function saveMarket(m, dir) { writeJson(dataPath("market.json", dir), m); }
 

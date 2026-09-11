@@ -19,7 +19,7 @@
 import { loadEnv, parseArgs } from "./env.mjs";
 import { clientFromEnv } from "./ebay.mjs";
 import { median } from "./scan.mjs";
-import { loadWatchlist, saveWatchlist, saveMarket, loadMarket, dataPath } from "./store.mjs";
+import { loadWatchlist, saveWatchlist, saveMarket, loadMarket, loadSold, dataPath } from "./store.mjs";
 
 const DAY = 86_400_000;
 
@@ -36,30 +36,34 @@ export function classify(entry, s, now = Date.now()) {
   return { ...entry, status: "removed", lastChecked: now, closedAt: now }; // gone: sold or withdrawn — not counted in prices
 }
 
-/** Per-query market read from the watchlist. Pure; tested. */
-export function computeMarket(watchlist, now = Date.now(), cfg = {}) {
+/** Per-query market read from the watchlist plus any verified sold prices (sold.json). Pure; tested. */
+export function computeMarket(watchlist, now = Date.now(), cfg = {}, verified = {}) {
   const buyFraction = cfg.buyFraction == null ? 0.5 : cfg.buyFraction;
   const askToSold = cfg.askToSold == null ? 0.85 : cfg.askToSold;
   const minClosed = cfg.minClosed == null ? 3 : cfg.minClosed;
   const byQ = {};
   for (const e of watchlist) (byQ[e.query] = byQ[e.query] || []).push(e);
+  for (const q of Object.keys(verified || {})) byQ[q] = byQ[q] || [];
   const out = {};
   for (const [q, es] of Object.entries(byQ)) {
+    // Verified prices (looked up on ebay.ie by a human) outrank inferred ones; use the most recent 10.
+    const ver = ((verified || {})[q] || []).map((v) => Number(v.price)).filter((p) => isFinite(p) && p > 0).slice(-10);
     const active = es.filter((e) => e.status === "active");
     const sold = es.filter((e) => e.status === "sold-likely");
     const expired = es.filter((e) => e.status === "expired");
     const removed = es.filter((e) => e.status === "removed");
     const closed = sold.length + expired.length;
     const medianAsk = active.length ? Math.round(median(active.map((e) => e.landed))) : (es.length ? Math.round(median(es.map((e) => e.landed))) : null);
-    const estSold = sold.length >= minClosed ? Math.round(median(sold.map((e) => e.closedPrice))) : null;
-    const basis = estSold != null ? "sold" : "proxy";
+    const inferred = sold.length >= minClosed ? Math.round(median(sold.map((e) => e.closedPrice))) : null;
+    const estSold = ver.length >= minClosed ? Math.round(median(ver)) : ver.length && inferred != null ? Math.round(median(ver.concat(sold.map((e) => e.closedPrice)))) : inferred;
+    const basis = ver.length >= minClosed ? "verified" : estSold != null ? "sold" : "proxy";
     const value = estSold != null ? estSold : (medianAsk != null ? Math.round(medianAsk * askToSold) : null);
     const oldest = Math.min(...es.map((e) => e.firstSeen || now));
     out[q] = {
       query: q, tracked: es.length, active: active.length, soldLikely: sold.length, expired: expired.length, removed: removed.length,
       daysTracked: Math.round((now - oldest) / DAY),
       sellThrough: closed >= minClosed ? Math.round((sold.length / closed) * 100) : null,
-      medianAsk, estSold, basis,
+      medianAsk, estSold, basis, verifiedCount: ver.length,
       targetBuy: value != null ? Math.round(value * buyFraction) : null,
       updatedAt: now,
     };
@@ -74,9 +78,9 @@ export function printMarket(market) {
   for (const r of rows) {
     console.log(r.query.slice(0, 29).padEnd(30) + String(r.tracked).padStart(7) + String(r.active).padStart(8) + String(r.soldLikely).padStart(6) +
       String(r.expired).padStart(9) + String(r.removed).padStart(9) + f(r.sellThrough, "%").padStart(11) + f(r.medianAsk, "€").padStart(12) +
-      (r.estSold == null ? "  proxy" : f(r.estSold, "€")).padStart(10) + f(r.targetBuy, "€").padStart(12));
+      (r.estSold == null ? "  proxy" : f(r.estSold, "€") + (r.basis === "verified" ? "✓" : " ")).padStart(10) + f(r.targetBuy, "€").padStart(12));
   }
-  console.log("\nest-sold = median asking of listings that ended early (sold). 'proxy' = not enough sales yet; target-buy then uses 85% of median asking.\ntarget-buy = half the estimated sold price: the most you pay, all-in, to keep ~30%+ margin after fees and postage.");
+  console.log("\nest-sold: ✓ = from sold prices you entered (node sold.mjs); otherwise median asking of tracked listings that ended early (sold).\n'proxy' = not enough sales yet; target-buy then uses 85% of median asking.\ntarget-buy = half the estimated sold price: the most you pay, all-in, to keep ~30%+ margin after fees and postage.");
 }
 
 async function main() {
@@ -85,7 +89,7 @@ async function main() {
   if (args.sandbox) process.env.EBAY_ENV = "sandbox";
   const dir = args.data ? String(args.data) : undefined;
   const watchlist = loadWatchlist(dir);
-  if (args.report) { printMarket(loadMarket(dir) || computeMarket(watchlist)); return; }
+  if (args.report) { printMarket(computeMarket(watchlist, Date.now(), {}, loadSold(dir))); return; }
   if (!watchlist.length) { console.log("Nothing tracked yet — run a scan first (node scan.mjs); it records the comps it sees into " + dataPath("watchlist.json", dir)); return; }
 
   const client = clientFromEnv(process.env, { log: (m) => console.log("  · " + m) });
@@ -106,7 +110,7 @@ async function main() {
     } catch (err) { changes.errors++; console.log("  ! " + e.title.slice(0, 50) + ": " + err.message); }
   }
   saveWatchlist(watchlist, dir);
-  const market = computeMarket(watchlist, now);
+  const market = computeMarket(watchlist, now, {}, loadSold(dir));
   saveMarket(market, dir);
   console.log(`\nChecked ${due.length} of ${watchlist.filter((e) => e.status === "active").length} active · ${changes.sold} likely sold · ${changes.expired} expired · ${changes.removed} removed · ${changes.errors} errors · ${client.calls.api} API calls`);
   printMarket(market);

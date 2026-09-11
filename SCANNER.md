@@ -27,6 +27,7 @@ Production (no approval step; 5,000 calls/day) — no closed sold-price API need
 | `radar.mjs` | `npm run radar -- "niche"` — active-listing count + median asking for Demand Radar's competition side. |
 | `watch.mjs` | `npm run watch -- <url\|id>` — is one listing still live? (Build Plan stage 05.) |
 | `track.mjs` | `npm run track` — re-checks every listing a scan recorded; builds your own sold-price history and `data/market.json` (sell-through, est. sold, target buy per search). `npm run market` prints it without API calls. |
+| `sold.mjs` | `npm run sold -- "Boss DS-1" 65 70 62` — enter real sold prices you read off ebay.ie ("Sold items" filter). Verified prices outrank the tracker's inferences. |
 | `store.mjs` | The scanner's memory: `data/watchlist.json` + `data/market.json`, committed so a scheduled run continues where the last stopped. |
 | `test/` | `npm test` — 24 offline tests against a fake eBay, so the code is verified before you spend a call. |
 
@@ -93,6 +94,12 @@ or withdrawn — not counted). From these, per search, `data/market.json` holds:
 | `sellThrough` | sold ÷ (sold + expired), once 3+ have closed — Demand Radar's key input |
 | `estSold` | median asking of the ones that sold — the real value (null until 3 sales; then the scanner's `estResale` switches to it) |
 | `targetBuy` | half of `estSold` (or of 85% of median asking while it's still a proxy) — the most to pay all-in |
+
+**Or tell it directly.** Sold prices are free to read on ebay.ie (search the
+model, tick *Sold items*). `npm run sold -- "Boss DS-1" 65 70 62` records what
+buyers actually paid; with 3+ entered, `estSold` comes from those (marked ✓ in
+the market table) and the tracker's inferences only fill in for searches you
+haven't looked up. That's the fastest way to make the numbers real on day one.
 
 The scanner reads `market.json` on its next run: anything at or under
 `targetBuy` is flagged, and each candidate's reasoning quotes the tracked

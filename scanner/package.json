@@ -15,6 +15,7 @@
     "watch": "node watch.mjs",
     "track": "node track.mjs",
     "market": "node track.mjs --report",
+    "sold": "node sold.mjs",
     "daily": "node scan.mjs && node track.mjs",
     "test": "node --test test/*.test.mjs"
   }

@@ -55,3 +55,17 @@ test("findCandidates uses the market's targetBuy and tracked estSold when presen
   assert.equal(out.length, 1); assert.equal(out[0].estResale, 160); assert.equal(out[0].estBasis, "tracked-sales");
   assert.match(out[0].reasoning, /Tracked sales say ~€160 \(70% sell-through\); target buy ≤€80/);
 });
+
+test("verified sold prices outrank inferred ones and set targetBuy", () => {
+  const wl = [entry({ id: "a" }), entry({ id: "b", landed: 100 }), entry({ id: "c", landed: 120 })];
+  const verified = { "Boss DS-1": [{ price: 60 }, { price: 70 }, { price: 65 }] };
+  const m = computeMarket(wl, T0, {}, verified)["Boss DS-1"];
+  assert.equal(m.basis, "verified"); assert.equal(m.estSold, 65); assert.equal(m.targetBuy, 33); assert.equal(m.verifiedCount, 3);
+  // A search with verified prices but nothing tracked yet still gets a row.
+  const only = computeMarket([], T0, {}, { "Zoom H4n": [{ price: 90 }, { price: 100 }, { price: 95 }] })["Zoom H4n"];
+  assert.equal(only.estSold, 95); assert.equal(only.targetBuy, 48); assert.equal(only.tracked, 0);
+  // One or two verified prices blend with inferred sales rather than replacing them.
+  const wl2 = wl.concat([entry({ id: "d", status: "sold-likely", closedPrice: 100 }), entry({ id: "e", status: "sold-likely", closedPrice: 100 }), entry({ id: "f", status: "sold-likely", closedPrice: 100 })]);
+  const blend = computeMarket(wl2, T0, {}, { "Boss DS-1": [{ price: 60 }] })["Boss DS-1"];
+  assert.equal(blend.basis, "sold"); assert.equal(blend.estSold, 100, "median of [60,100,100,100]");
+});
