@@ -57,6 +57,9 @@
   .store-chip { font-size: 11px; font-family: "IBM Plex Mono", monospace; color: var(--ink-faint); border: 1px solid var(--hair-strong); border-radius: 999px; padding: 4px 10px; display: inline-flex; gap: 6px; align-items: center; }
   .store-chip .d { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); }
   .store-chip.synced .d { background: var(--good); }
+  .store-chip.pending .d { background: var(--warn); }
+  .store-chip.blocked .d { background: var(--bad); }
+  .store-chip.clickable { cursor: pointer; color: var(--accent); border-color: var(--accent); }
   .theme-btn { border: 1px solid var(--hair-strong); background: var(--surface); color: var(--ink-muted); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
   .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
 
@@ -402,7 +405,7 @@
 
   // ---------- store (db with localStorage fallback) ----------
   var Store = {
-    mode: "local", db: null, finds: [], discoveries: [], listeners: [],
+    mode: "local", db: null, dbReady: false, finds: [], discoveries: [], listeners: [],
     onChange: function (fn) { this.listeners.push(fn); },
     emit: function () { for (var i = 0; i < this.listeners.length; i++) this.listeners[i](); },
     setLocal: function (arr) { this.finds = arr; try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch (e) {} this.emit(); },
@@ -678,6 +681,7 @@
   };
 
   var DISCDATA_KEY = "scout.discoveries.v1";
+  var dbNotice = ""; // why the shared store isn't delivering, if it isn't
   var disc = { niche: "music-gear", queries: {}, dismissed: {}, added: {} };
   (function loadDisc() { try { var r = JSON.parse(localStorage.getItem(DISC_KEY)); if (r) disc = Object.assign(disc, r); } catch (e) {} })();
   function saveDisc() { try { localStorage.setItem(DISC_KEY, JSON.stringify({ niche: disc.niche, queries: disc.queries })); } catch (e) {} }
@@ -741,7 +745,9 @@
     } else {
       cands = sampleCandidates(disc.niche);
       note.className = "disc-note";
-      note.innerHTML = 'These are <span class="ex-tag">sample</span> candidates, so you can see the ranking and the hand-off to your board. The page can’t call eBay directly — real listings arrive only when a <strong>scanner</strong> writes them into Scout’s store (schema in <code>SCANNER.md</code>). That scanner needs a machine with eBay access + API credentials, so until it’s running, use <strong>Assess</strong> to add finds you spot while browsing yourself.';
+      var lead = dbNotice ? '<span class="err">' + dbNotice + '</span><br>' :
+        (Store.dbReady ? '● Connected to Scout’s shared store — nothing in it yet. The morning scan fills it. Meanwhile: ' : '');
+      note.innerHTML = lead + 'These are <span class="ex-tag">sample</span> candidates, so you can see the ranking and the hand-off to your board. Real listings arrive when the <strong>scanner</strong> writes them into Scout’s store (see <code>SCANNER.md</code>); until then use <strong>Assess</strong> to add finds you spot while browsing yourself.';
     }
     cands = cands.filter(function (c) { return !disc.added[c.id] || true; });
     cands.sort(function (a, b) { return candScore(b).roi - candScore(a).roi; });
@@ -893,6 +899,7 @@
 
   // ---------- utils ----------
   function id(x) { return document.getElementById(x); }
+  function setChip(label, cls, title) { id("storeLabel").textContent = label; id("storeChip").className = "store-chip" + (cls ? " " + cls : ""); id("storeChip").title = title || ""; id("storeChip").onclick = null; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
   // ---------- boot ----------
@@ -906,19 +913,55 @@
     }).catch(function () { showUnavailable(); });
 
     claude.use("db").then(function (db) {
-      if (!db) return; // stay local
+      if (!db) { setChip("local", "", "Shared storage isn’t available in this view — finds stay in this browser."); return; }
       Store.mode = "db"; Store.db = db;
-      id("storeLabel").textContent = "synced"; id("storeChip").className = "store-chip synced";
+      setChip("connecting…", "pending", "Waiting for Scout’s shared store");
+      var got = { finds: false, disc: false };
+      function arrived(which) { got[which] = true; if (got.finds && got.disc && !Store.dbReady) { Store.dbReady = true; dbNotice = ""; setChip("synced", "synced", "Connected to Scout’s shared store"); Store.emit(); } }
+      function failed(e) {
+        var code = e && e.code ? e.code : "error";
+        console.warn("db snapshot", e);
+        Store.mode = "local"; Store.dbReady = false; Store.finds = Store.loadLocal();
+        setChip("local · " + code, "blocked", "Shared store unavailable (" + code + ") — showing what’s saved in this browser.");
+        dbNotice = "Couldn’t read Scout’s shared store (" + code + "). Reload the page; if it persists, the store is down or access changed.";
+        Store.emit();
+      }
       db.collection("finds").onSnapshot(function (snap) {
         var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
-        Store.finds = arr; Store.emit();
-      }, function (e) { console.warn("db snapshot", e); id("storeLabel").textContent = "local"; id("storeChip").className = "store-chip"; Store.mode = "local"; Store.finds = Store.loadLocal(); Store.emit(); });
+        Store.finds = arr; arrived("finds"); Store.emit();
+      }, failed);
       db.collection("discoveries").onSnapshot(function (snap) {
         var arr = []; snap.docs.forEach(function (d) { var v = d.data(); if (v) { v.id = d.id; arr.push(v); } });
         arr.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
-        Store.discoveries = arr; Store.emit();
-      }, function () {});
-    }).catch(function () {});
+        Store.discoveries = arr; arrived("disc"); Store.emit();
+      }, failed);
+      // Nothing after a few seconds usually means the viewer’s permission prompt is still waiting for an answer.
+      setTimeout(function () {
+        if (got.finds || got.disc || Store.mode !== "db") return;
+        claude.use("permissions").then(function (p) {
+          if (!p) return;
+          p.state("db").then(function (st) {
+            if (st === "granted") { setChip("connecting…", "pending", "Permission granted; still waiting for data"); return; }
+            if (st === "denied") { denied(); return; }
+            if (st === "unavailable") { setChip("local", "", "Shared storage isn’t available in this view."); Store.mode = "local"; return; }
+            // "prompt": the ask never reached the viewer, or was dismissed. Offer it plainly.
+            setChip("allow storage ▸", "pending clickable", "Click to let Scout read and write its shared store");
+            dbNotice = "Scout needs your permission to read its shared store. Click <strong>allow storage</strong> at the top right and accept the prompt.";
+            Store.emit();
+            id("storeChip").onclick = function () {
+              setChip("asking…", "pending", "");
+              p.request(["db"]).then(function (r) { if (r && r.db === "denied") denied(); else { setChip("connecting…", "pending", "Permission granted; waiting for data"); dbNotice = ""; Store.emit(); } });
+            };
+          }).catch(function () {});
+        }).catch(function () {});
+      }, 3000);
+      function denied() {
+        Store.mode = "local"; Store.dbReady = false;
+        setChip("storage off", "blocked", "You declined shared storage for this page load. Reload to be asked again.");
+        dbNotice = "Shared storage was declined for this page load, so Discover can’t show the scanner’s finds. Reload the page and accept the storage prompt.";
+        Store.emit();
+      }
+    }).catch(function (e) { setChip("local", "", "Shared storage failed to load: " + (e && e.message ? e.message : e)); });
 
     claude.use("downloads").then(function (d) { if (d) { downloadsFn = d; updateExportBtn(); } }).catch(function () {});
   } else { showUnavailable(); }
