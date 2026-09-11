@@ -12,8 +12,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 36,
-    "updatedAt": 1789121370356
+    "targetBuy": 25,
+    "updatedAt": 1789121912886
   },
   "Shure SM58": {
     "query": "Shure SM58",
@@ -29,7 +29,7 @@
     "basis": "verified",
     "verifiedCount": 7,
     "targetBuy": 28,
-    "updatedAt": 1789121370356
+    "updatedAt": 1789121912886
   },
   "Focusrite Scarlett 2i2": {
     "query": "Focusrite Scarlett 2i2",
@@ -44,8 +44,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 71,
-    "updatedAt": 1789121370356
+    "targetBuy": 50,
+    "updatedAt": 1789121912886
   },
   "Boss RC-1 Loop Station": {
     "query": "Boss RC-1 Loop Station",
@@ -60,8 +60,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 49,
-    "updatedAt": 1789121370356
+    "targetBuy": 35,
+    "updatedAt": 1789121912886
   },
   "Korg Volca Beats": {
     "query": "Korg Volca Beats",
@@ -76,8 +76,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 74,
-    "updatedAt": 1789121370356
+    "targetBuy": 52,
+    "updatedAt": 1789121912886
   },
   "TC Electronic Hall of Fame 2": {
     "query": "TC Electronic Hall of Fame 2",
@@ -92,8 +92,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 87,
-    "updatedAt": 1789121370356
+    "targetBuy": 62,
+    "updatedAt": 1789121912886
   },
   "Zoom H4n": {
     "query": "Zoom H4n",
@@ -108,8 +108,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 51,
-    "updatedAt": 1789121370356
+    "targetBuy": 36,
+    "updatedAt": 1789121912886
   },
   "Vaillant ecoTEC PCB": {
     "query": "Vaillant ecoTEC PCB",
@@ -121,11 +121,11 @@
     "daysTracked": 0,
     "sellThrough": null,
     "medianAsk": 72,
-    "estSold": null,
-    "basis": "proxy",
-    "verifiedCount": 0,
-    "targetBuy": 31,
-    "updatedAt": 1789121370356
+    "estSold": 42,
+    "basis": "verified",
+    "verifiedCount": 10,
+    "targetBuy": 21,
+    "updatedAt": 1789121912886
   },
   "Vaillant ecoTEC board": {
     "query": "Vaillant ecoTEC board",
@@ -137,11 +137,11 @@
     "daysTracked": 0,
     "sellThrough": null,
     "medianAsk": 101,
-    "estSold": null,
-    "basis": "proxy",
-    "verifiedCount": 0,
-    "targetBuy": 43,
-    "updatedAt": 1789121370356
+    "estSold": 42,
+    "basis": "verified",
+    "verifiedCount": 10,
+    "targetBuy": 21,
+    "updatedAt": 1789121912886
   },
   "Worcester Bosch PCB": {
     "query": "Worcester Bosch PCB",
@@ -156,8 +156,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 30,
-    "updatedAt": 1789121370356
+    "targetBuy": 21,
+    "updatedAt": 1789121912886
   },
   "Worcester Greenstar PCB": {
     "query": "Worcester Greenstar PCB",
@@ -172,8 +172,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 24,
-    "updatedAt": 1789121370356
+    "targetBuy": 17,
+    "updatedAt": 1789121912886
   },
   "Baxi PCB": {
     "query": "Baxi PCB",
@@ -188,8 +188,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 26,
-    "updatedAt": 1789121370356
+    "targetBuy": 18,
+    "updatedAt": 1789121912886
   },
   "Ideal Logic PCB": {
     "query": "Ideal Logic PCB",
@@ -204,24 +204,24 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 30,
-    "updatedAt": 1789121370356
+    "targetBuy": 21,
+    "updatedAt": 1789121912886
   },
   "Glow-worm PCB": {
     "query": "Glow-worm PCB",
-    "tracked": 15,
-    "active": 15,
+    "tracked": 16,
+    "active": 16,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 64,
+    "medianAsk": 65,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 27,
-    "updatedAt": 1789121370356
+    "targetBuy": 20,
+    "updatedAt": 1789121912886
   },
   "Grundfos UPS2": {
     "query": "Grundfos UPS2",
@@ -236,8 +236,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 44,
-    "updatedAt": 1789121370356
+    "targetBuy": 31,
+    "updatedAt": 1789121912886
   },
   "Grundfos UPS 15-50": {
     "query": "Grundfos UPS 15-50",
@@ -252,8 +252,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 41,
-    "updatedAt": 1789121370356
+    "targetBuy": 29,
+    "updatedAt": 1789121912886
   },
   "Honeywell V4043": {
     "query": "Honeywell V4043",
@@ -268,8 +268,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 49,
-    "updatedAt": 1789121370356
+    "targetBuy": 35,
+    "updatedAt": 1789121912886
   },
   "Vaillant diverter valve": {
     "query": "Vaillant diverter valve",
@@ -284,8 +284,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 23,
-    "updatedAt": 1789121370356
+    "targetBuy": 16,
+    "updatedAt": 1789121912886
   },
   "Worcester diverter valve": {
     "query": "Worcester diverter valve",
@@ -300,8 +300,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 35,
-    "updatedAt": 1789121370356
+    "targetBuy": 25,
+    "updatedAt": 1789121912886
   },
   "Vaillant fan": {
     "query": "Vaillant fan",
@@ -316,8 +316,8 @@
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 33,
-    "updatedAt": 1789121370356
+    "targetBuy": 23,
+    "updatedAt": 1789121912886
   },
   "Ideal Logic fan": {
     "query": "Ideal Logic fan",
@@ -333,39 +333,39 @@
     "basis": "verified",
     "verifiedCount": 10,
     "targetBuy": 33,
-    "updatedAt": 1789121370356
+    "updatedAt": 1789121912886
   },
   "Focusrite Scarlett 2i2 3rd Gen": {
     "query": "Focusrite Scarlett 2i2 3rd Gen",
-    "tracked": 0,
-    "active": 0,
+    "tracked": 18,
+    "active": 18,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": null,
+    "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": null,
+    "medianAsk": 166,
     "estSold": 97,
     "basis": "verified",
     "verifiedCount": 10,
     "targetBuy": 49,
-    "updatedAt": 1789121370356
+    "updatedAt": 1789121912886
   },
   "Focusrite Scarlett 2i2 4th Gen": {
     "query": "Focusrite Scarlett 2i2 4th Gen",
-    "tracked": 0,
-    "active": 0,
+    "tracked": 6,
+    "active": 6,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": null,
+    "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": null,
+    "medianAsk": 254,
     "estSold": 167,
     "basis": "verified",
     "verifiedCount": 6,
     "targetBuy": 84,
-    "updatedAt": 1789121370356
+    "updatedAt": 1789121912886
   },
   "Focusrite Scarlett 2i2 1st Gen": {
     "query": "Focusrite Scarlett 2i2 1st Gen",
@@ -381,7 +381,7 @@
     "basis": "proxy",
     "verifiedCount": 2,
     "targetBuy": null,
-    "updatedAt": 1789121370356
+    "updatedAt": 1789121912886
   },
   "Focusrite Scarlett 2i2 2nd Gen": {
     "query": "Focusrite Scarlett 2i2 2nd Gen",
@@ -397,6 +397,38 @@
     "basis": "verified",
     "verifiedCount": 6,
     "targetBuy": 33,
-    "updatedAt": 1789121370356
+    "updatedAt": 1789121912886
+  },
+  "Vaillant 0010028086": {
+    "query": "Vaillant 0010028086",
+    "tracked": 0,
+    "active": 0,
+    "soldLikely": 0,
+    "expired": 0,
+    "removed": 0,
+    "daysTracked": null,
+    "sellThrough": null,
+    "medianAsk": null,
+    "estSold": 106,
+    "basis": "verified",
+    "verifiedCount": 3,
+    "targetBuy": 53,
+    "updatedAt": 1789121912886
+  },
+  "Vaillant 0020132764": {
+    "query": "Vaillant 0020132764",
+    "tracked": 0,
+    "active": 0,
+    "soldLikely": 0,
+    "expired": 0,
+    "removed": 0,
+    "daysTracked": null,
+    "sellThrough": null,
+    "medianAsk": null,
+    "estSold": 34,
+    "basis": "verified",
+    "verifiedCount": 6,
+    "targetBuy": 17,
+    "updatedAt": 1789121912886
   }
 }

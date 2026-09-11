@@ -1,8 +1,10 @@
 {
   "niche": "trade-parts",
   "queries": [
-    "Vaillant ecoTEC PCB",
-    "Vaillant ecoTEC board",
+    "Vaillant 0010028086",
+    "Vaillant 0020132764",
+    "Vaillant 0020108264",
+    "Vaillant 0020036861",
     "Worcester Bosch PCB",
     "Worcester Greenstar PCB",
     "Baxi PCB",
@@ -40,5 +42,6 @@
     "home": 8,
     "eu": 15,
     "other": 30
-  }
+  },
+  "_note3": "Vaillant main boards are searched by part number: verified sold (Sep 2026) old-type 0020132764 \u2248 \u20ac34 used, 2012+ 0010028086 \u2248 \u20ac106 used. A generic 'ecoTEC PCB' search blends them and misprices both."
 }
