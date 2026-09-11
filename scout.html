@@ -935,26 +935,46 @@
         arr.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
         Store.discoveries = arr; arrived("disc"); Store.emit();
       }, failed);
-      // Nothing after a few seconds usually means the viewer’s permission prompt is still waiting for an answer.
-      setTimeout(function () {
+      // Nothing after a few seconds: either the viewer’s permission prompt is still waiting for an answer,
+      // or the live feed is slow — in which case read the store directly and keep trying.
+      function readDirect() {
+        return Promise.all([db.collection("finds").get(), db.collection("discoveries").get()]).then(function (r) {
+          var f = [], d = [];
+          r[0].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; f.push(v); } });
+          r[1].docs.forEach(function (x) { var v = x.data(); if (v) { v.id = x.id; d.push(v); } });
+          d.sort(function (a, b) { return (b.foundAt || 0) - (a.foundAt || 0); });
+          Store.finds = f; Store.discoveries = d; arrived("finds"); arrived("disc"); Store.emit();
+        });
+      }
+      var tries = 0;
+      function checkIn() {
         if (got.finds || got.disc || Store.mode !== "db") return;
         claude.use("permissions").then(function (p) {
-          if (!p) return;
-          p.state("db").then(function (st) {
-            if (st === "granted") { setChip("connecting…", "pending", "Permission granted; still waiting for data"); return; }
+          var stateP = p ? p.state("db") : Promise.resolve("granted");
+          stateP.then(function (st) {
             if (st === "denied") { denied(); return; }
-            if (st === "unavailable") { setChip("local", "", "Shared storage isn’t available in this view."); Store.mode = "local"; return; }
-            // "prompt": the ask never reached the viewer, or was dismissed. Offer it plainly.
-            setChip("allow storage ▸", "pending clickable", "Click to let Scout read and write its shared store");
-            dbNotice = "Scout needs your permission to read its shared store. Click <strong>allow storage</strong> at the top right and accept the prompt.";
-            Store.emit();
-            id("storeChip").onclick = function () {
-              setChip("asking…", "pending", "");
-              p.request(["db"]).then(function (r) { if (r && r.db === "denied") denied(); else { setChip("connecting…", "pending", "Permission granted; waiting for data"); dbNotice = ""; Store.emit(); } });
-            };
+            if (st === "unavailable") { setChip("local", "", "Shared storage isn’t available in this view."); Store.mode = "local"; Store.emit(); return; }
+            if (st === "prompt" && p) {
+              setChip("allow storage ▸", "pending clickable", "Click to let Scout read and write its shared store");
+              dbNotice = "Scout needs your permission to read its shared store. Click <strong>allow storage</strong> at the top right and accept the prompt.";
+              Store.emit();
+              id("storeChip").onclick = function () {
+                setChip("asking…", "pending", "");
+                p.request(["db"]).then(function (r) { if (r && r.db === "denied") denied(); else { setChip("connecting…", "pending", "Permission granted; fetching data"); dbNotice = ""; Store.emit(); readDirect().catch(function () {}); setTimeout(checkIn, 4000); } });
+              };
+              return;
+            }
+            // granted but nothing delivered yet: read directly, and try again in a bit if that fails too
+            setChip("connecting…", "pending", "Permission granted; fetching data (try " + (tries + 1) + ")");
+            readDirect().catch(function (e) {
+              tries++;
+              if (tries >= 6) { failed(e || { code: "unavailable" }); return; }
+              setTimeout(checkIn, 5000);
+            });
           }).catch(function () {});
         }).catch(function () {});
-      }, 3000);
+      }
+      setTimeout(checkIn, 3000);
       function denied() {
         Store.mode = "local"; Store.dbReady = false;
         setChip("storage off", "blocked", "You declined shared storage for this page load. Reload to be asked again.");
