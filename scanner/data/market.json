@@ -6,30 +6,30 @@
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": 0,
+    "daysTracked": 1,
     "sellThrough": null,
     "medianAsk": 83,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 36,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Shure SM58": {
     "query": "Shure SM58",
-    "tracked": 29,
-    "active": 29,
+    "tracked": 30,
+    "active": 30,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": 0,
+    "daysTracked": 1,
     "sellThrough": null,
-    "medianAsk": 130,
+    "medianAsk": 143,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 56,
-    "updatedAt": 1789099486134
+    "targetBuy": 61,
+    "updatedAt": 1789120529383
   },
   "Focusrite Scarlett 2i2": {
     "query": "Focusrite Scarlett 2i2",
@@ -38,14 +38,14 @@
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": 0,
+    "daysTracked": 1,
     "sellThrough": null,
     "medianAsk": 167,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 71,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Boss RC-1 Loop Station": {
     "query": "Boss RC-1 Loop Station",
@@ -54,67 +54,67 @@
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": 0,
+    "daysTracked": 1,
     "sellThrough": null,
     "medianAsk": 115,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 49,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Korg Volca Beats": {
     "query": "Korg Volca Beats",
-    "tracked": 24,
-    "active": 24,
+    "tracked": 23,
+    "active": 23,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": 0,
+    "daysTracked": 1,
     "sellThrough": null,
-    "medianAsk": 174,
+    "medianAsk": 173,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 74,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "TC Electronic Hall of Fame 2": {
     "query": "TC Electronic Hall of Fame 2",
-    "tracked": 30,
-    "active": 30,
+    "tracked": 17,
+    "active": 17,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
-    "daysTracked": 0,
+    "daysTracked": 1,
     "sellThrough": null,
-    "medianAsk": 208,
+    "medianAsk": 205,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 89,
-    "updatedAt": 1789099486134
+    "targetBuy": 87,
+    "updatedAt": 1789120529383
   },
   "Zoom H4n": {
     "query": "Zoom H4n",
-    "tracked": 27,
-    "active": 26,
+    "tracked": 21,
+    "active": 20,
     "soldLikely": 0,
     "expired": 1,
     "removed": 0,
-    "daysTracked": 0,
+    "daysTracked": 1,
     "sellThrough": null,
-    "medianAsk": 120,
+    "medianAsk": 119,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 51,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Vaillant ecoTEC PCB": {
     "query": "Vaillant ecoTEC PCB",
-    "tracked": 30,
-    "active": 30,
+    "tracked": 26,
+    "active": 26,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
@@ -125,12 +125,12 @@
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 31,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Vaillant ecoTEC board": {
     "query": "Vaillant ecoTEC board",
-    "tracked": 25,
-    "active": 25,
+    "tracked": 14,
+    "active": 14,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
@@ -141,7 +141,7 @@
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 43,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Worcester Bosch PCB": {
     "query": "Worcester Bosch PCB",
@@ -152,12 +152,12 @@
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 74,
+    "medianAsk": 69,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 32,
-    "updatedAt": 1789099486134
+    "targetBuy": 30,
+    "updatedAt": 1789120529383
   },
   "Worcester Greenstar PCB": {
     "query": "Worcester Greenstar PCB",
@@ -168,12 +168,12 @@
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 58,
+    "medianAsk": 56,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 25,
-    "updatedAt": 1789099486134
+    "targetBuy": 24,
+    "updatedAt": 1789120529383
   },
   "Baxi PCB": {
     "query": "Baxi PCB",
@@ -189,55 +189,55 @@
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 26,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Ideal Logic PCB": {
     "query": "Ideal Logic PCB",
-    "tracked": 30,
-    "active": 30,
+    "tracked": 28,
+    "active": 28,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 67,
+    "medianAsk": 70,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 29,
-    "updatedAt": 1789099486134
+    "targetBuy": 30,
+    "updatedAt": 1789120529383
   },
   "Glow-worm PCB": {
     "query": "Glow-worm PCB",
-    "tracked": 22,
-    "active": 22,
+    "tracked": 15,
+    "active": 15,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 57,
+    "medianAsk": 64,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 24,
-    "updatedAt": 1789099486134
+    "targetBuy": 27,
+    "updatedAt": 1789120529383
   },
   "Grundfos UPS2": {
     "query": "Grundfos UPS2",
-    "tracked": 23,
-    "active": 23,
+    "tracked": 20,
+    "active": 20,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 107,
+    "medianAsk": 104,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 46,
-    "updatedAt": 1789099486134
+    "targetBuy": 44,
+    "updatedAt": 1789120529383
   },
   "Grundfos UPS 15-50": {
     "query": "Grundfos UPS 15-50",
@@ -248,28 +248,28 @@
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 97,
+    "medianAsk": 96,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 41,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Honeywell V4043": {
     "query": "Honeywell V4043",
-    "tracked": 13,
-    "active": 13,
+    "tracked": 5,
+    "active": 5,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 61,
+    "medianAsk": 115,
     "estSold": null,
     "basis": "proxy",
     "verifiedCount": 0,
-    "targetBuy": 26,
-    "updatedAt": 1789099486134
+    "targetBuy": 49,
+    "updatedAt": 1789120529383
   },
   "Vaillant diverter valve": {
     "query": "Vaillant diverter valve",
@@ -285,12 +285,12 @@
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 23,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Worcester diverter valve": {
     "query": "Worcester diverter valve",
-    "tracked": 30,
-    "active": 30,
+    "tracked": 25,
+    "active": 25,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
@@ -301,7 +301,7 @@
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 35,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Vaillant fan": {
     "query": "Vaillant fan",
@@ -317,22 +317,22 @@
     "basis": "proxy",
     "verifiedCount": 0,
     "targetBuy": 33,
-    "updatedAt": 1789099486134
+    "updatedAt": 1789120529383
   },
   "Ideal Logic fan": {
     "query": "Ideal Logic fan",
-    "tracked": 23,
-    "active": 23,
+    "tracked": 20,
+    "active": 20,
     "soldLikely": 0,
     "expired": 0,
     "removed": 0,
     "daysTracked": 0,
     "sellThrough": null,
-    "medianAsk": 95,
-    "estSold": null,
-    "basis": "proxy",
-    "verifiedCount": 0,
-    "targetBuy": 41,
-    "updatedAt": 1789099486134
+    "medianAsk": 101,
+    "estSold": 65,
+    "basis": "verified",
+    "verifiedCount": 10,
+    "targetBuy": 33,
+    "updatedAt": 1789120529383
   }
 }
