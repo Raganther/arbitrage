@@ -8,7 +8,7 @@
  * tool's write_db (batches of ≤50). This script does the thinking; the session
  * does the writing:
  *
- *   node publish.mjs [--existing <dir>] [--max-age-days 14]
+ *   node publish.mjs [--existing <dir>] [--max-age-days 14] [--in file.json …]   (default: scan-results.json + lot-results.json)
  *
  *   --existing <dir>   a dump of the current discoveries collection (one JSON
  *                      file per doc, as read_db --out_dir produces). Docs already
@@ -34,7 +34,7 @@ export function toDoc(c, now = Date.now()) {
     title: String(c.title), price: Number(c.price), estResale: Number(c.estResale), cond: c.cond || "",
     soldQuery: c.soldQuery || c.title, category: c.category || "other", source: c.source || "eBay",
     url: c.url || "", reasoning: c.reasoning || "", foundAt: Number(c.foundAt) || now, status: "new",
-    ...(c.image ? { image: c.image } : {}), ...(c.targetBuy ? { targetBuy: c.targetBuy } : {}), ...(c.estBasis ? { estBasis: c.estBasis } : {}),
+    ...(c.image ? { image: c.image } : {}), ...(c.targetBuy ? { targetBuy: c.targetBuy } : {}), ...(c.estBasis ? { estBasis: c.estBasis } : {}), ...(c.lot ? { lot: true } : {}),
   } };
 }
 
@@ -82,7 +82,9 @@ export function chunk(arr, n = 50) { const out = []; for (let i = 0; i < arr.len
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const dir = args.data ? String(args.data) : undefined;
-  const results = JSON.parse(readFileSync(args.in ? String(args.in) : dataPath("scan-results.json", dir), "utf8"));
+  // Today's scan plus today's job lots (lots.mjs), when that file exists.
+  const files = args.in ? [].concat(args.in).map(String) : [dataPath("scan-results.json", dir), dataPath("lot-results.json", dir)].filter(existsSync);
+  const results = files.flatMap((f) => JSON.parse(readFileSync(f, "utf8")));
   const existing = loadExisting(args.existing ? String(args.existing) : null);
   const { sets, deletes, updates } = planWrites(results, existing, { maxAgeDays: args["max-age-days"] != null ? Number(args["max-age-days"]) : 1 });
   const outDir = dataPath("publish", dir), docsDir = join(outDir, "docs");

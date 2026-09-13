@@ -8,6 +8,7 @@
  *   index            { queries: [slug…], savedAt }
  *   market           the market.json object
  *   sold             the sold.json object
+ *   pricelist        the pricelist.json object (items priced only so job lots can be valued — lots.mjs)
  *   watch-<slug>     { query, entries: [watchlist entries for that query] }   (≤ ~40 entries, well under the 256 KiB doc cap)
  *
  *   node state.mjs export                # data/* → data/state-out/manifest.json (write_db batches) + docs
@@ -21,7 +22,7 @@ export const COLLECTION = "scanner";
 export const slug = (q) => String(q).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "q";
 
 /** Split state into documents. Pure; tested. */
-export function toDocs(watchlist, market, sold, now = Date.now()) {
+export function toDocs(watchlist, market, sold, now = Date.now(), pricelist = null) {
   const byQ = {};
   for (const e of watchlist) (byQ[e.query] = byQ[e.query] || []).push(e);
   const docs = {};
@@ -34,6 +35,7 @@ export function toDocs(watchlist, market, sold, now = Date.now()) {
   docs.index = { queries: slugs, savedAt: now, tracked: watchlist.length };
   docs.market = { savedAt: now, market: market || {} };
   docs.sold = { savedAt: now, sold: sold || {} };
+  if (pricelist && Object.keys(pricelist).length) docs.pricelist = { savedAt: now, pricelist };
   return docs;
 }
 
@@ -44,8 +46,8 @@ export function fromDocs(dump) {
   const watchlist = [];
   const ids = idx && Array.isArray(idx.queries) ? idx.queries.map((s) => "watch-" + s) : Object.keys(dump).filter((k) => k.startsWith("watch-"));
   for (const id of ids) { const d = get(id); if (d && Array.isArray(d.entries)) watchlist.push(...d.entries); }
-  const m = get("market"), s = get("sold");
-  return { watchlist, market: m && m.market ? m.market : null, sold: s && s.sold ? s.sold : {} };
+  const m = get("market"), s = get("sold"), p = get("pricelist");
+  return { watchlist, market: m && m.market ? m.market : null, sold: s && s.sold ? s.sold : {}, pricelist: p && p.pricelist ? p.pricelist : null };
 }
 
 function loadDump(dir) {
@@ -63,7 +65,8 @@ function loadDump(dir) {
 function main() {
   const [cmd, arg] = process.argv.slice(2);
   if (cmd === "export") {
-    const docs = toDocs(loadWatchlist(), loadMarket(), loadSold());
+    const plPath = dataPath("pricelist.json");
+    const docs = toDocs(loadWatchlist(), loadMarket(), loadSold(), Date.now(), existsSync(plPath) ? JSON.parse(readFileSync(plPath, "utf8")) : null);
     const outDir = dataPath("state-out"), docsDir = join(outDir, "docs");
     rmSync(outDir, { recursive: true, force: true }); mkdirSync(docsDir, { recursive: true });
     const writes = [];
@@ -76,7 +79,8 @@ function main() {
     console.log(`Exported ${writes.length} state doc(s) (${docs.index.tracked} tracked listings) → ${join(outDir, "manifest.json")}`);
   } else if (cmd === "import") {
     const dump = loadDump(arg);
-    const { watchlist, market, sold } = fromDocs(dump);
+    const { watchlist, market, sold, pricelist } = fromDocs(dump);
+    if (pricelist) writeFileSync(dataPath("pricelist.json"), JSON.stringify(pricelist, null, 2));
     if (!watchlist.length && !market && !Object.keys(sold).length) { console.log("No saved state in " + (arg || "(none)") + " — keeping data/ as it is."); return; }
     // Merge: saved state wins for tracked entries; anything local-only (e.g. from a git checkout) is kept too.
     const local = loadWatchlist(); const seen = new Set(watchlist.map((e) => e.id));

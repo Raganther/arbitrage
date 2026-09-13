@@ -15,3 +15,11 @@ and €20 display boards together; the median of that mix means nothing. Use
 `excludeWordsExtra` (adds to the default broken/accessory lists) to strip the
 sub-parts — `trade-parts.json` drops display, interface, motor, actuator, pump
 head, sensor and so on for exactly that reason.
+
+**Job lots** (`lots.mjs`, run by `npm run daily` after the scan). Two extra keys
+per config: `lotSearches` — the searches that turn up lot-style listings ("boiler
+parts job lot", "guitar effects pedals bundle"); `lotCatalogue` — items priced
+only so lots can be valued (one call each, cached a week in `data/pricelist.json`;
+not scanned or tracked). `lotExcludeWords` drops lots that are the wrong kind of
+thing altogether (DIY kits, washers, cables). A lot is only ever valued on the
+items we have a price for.

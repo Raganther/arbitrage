@@ -18,7 +18,7 @@
     "Vaillant fan",
     "Ideal Logic fan"
   ],
-  "_note": "PCB searches mix \u20ac100 main boards with \u20ac20 display/interface boards; keep each search to one part type so the median means something.",
+  "_note": "PCB searches mix €100 main boards with €20 display/interface boards; keep each search to one part type so the median means something.",
   "excludeWordsExtra": [
     "display",
     "interface",
@@ -43,5 +43,55 @@
     "eu": 15,
     "other": 30
   },
-  "_note3": "Vaillant main boards are searched by part number: verified sold (Sep 2026) old-type 0020132764 \u2248 \u20ac34 used, 2012+ 0010028086 \u2248 \u20ac106 used. A generic 'ecoTEC PCB' search blends them and misprices both."
+  "_note3": "Vaillant main boards are searched by part number: verified sold (Sep 2026) old-type 0020132764 ≈ €34 used, 2012+ 0010028086 ≈ €106 used. A generic 'ecoTEC PCB' search blends them and misprices both.",
+  "lotSearches": [
+    "boiler parts job lot",
+    "boiler spares bundle",
+    "Vaillant spares job lot",
+    "Worcester boiler parts lot",
+    "Ideal boiler parts lot",
+    "central heating parts job lot",
+    "plumbing parts clearance lot"
+  ],
+  "_lots": "lots.mjs searches these for job lots/bundles and values each against data/market.json (only items we have a price for count).",
+  "lotCatalogue": [
+    "Worcester Greenstar fan",
+    "Baxi fan",
+    "Glow-worm fan",
+    "Vaillant pump",
+    "Worcester Greenstar pump",
+    "Grundfos UPS3",
+    "Baxi diverter valve",
+    "Ideal Logic diverter valve",
+    "Honeywell V4044",
+    "Danfoss HSA3",
+    "Vaillant gas valve",
+    "Worcester gas valve",
+    "Ideal Logic gas valve",
+    "Baxi gas valve",
+    "Vaillant heat exchanger",
+    "Worcester heat exchanger",
+    "Ideal Logic heat exchanger",
+    "Vaillant expansion vessel",
+    "Worcester expansion vessel",
+    "Vaillant pressure sensor",
+    "Ideal Logic PCB 175594",
+    "Worcester 87161463280",
+    "Baxi 5121495",
+    "Vaillant 0020052021"
+  ],
+  "lotExcludeWords": [
+    "o-ring",
+    "o ring",
+    "washer",
+    "washers",
+    "seal kit",
+    "gasket",
+    "thermocouple",
+    "screw",
+    "clip",
+    "clips",
+    "bracket"
+  ],
+  "_lotCatalogue": "Extra items priced (60% of median asking, refreshed weekly, 1 call each) so lots containing them can be valued. Not scanned or tracked."
 }

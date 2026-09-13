@@ -1,0 +1,332 @@
+{
+  "Boss SD-1": {
+    "medianAsk": 145,
+    "n": 38,
+    "at": 1789305595526
+  },
+  "Boss TU-3": {
+    "medianAsk": 112,
+    "n": 37,
+    "at": 1789305595526
+  },
+  "Boss CS-3": {
+    "medianAsk": 85,
+    "n": 40,
+    "at": 1789305595526
+  },
+  "Boss BD-2": {
+    "medianAsk": 122,
+    "n": 40,
+    "at": 1789305595526
+  },
+  "Boss DD-7": {
+    "medianAsk": 153,
+    "n": 38,
+    "at": 1789305595526
+  },
+  "Boss DD-3": {
+    "medianAsk": 136,
+    "n": 40,
+    "at": 1789305595526
+  },
+  "Boss CH-1": {
+    "medianAsk": 104,
+    "n": 38,
+    "at": 1789305595526
+  },
+  "Boss GE-7": {
+    "medianAsk": 110,
+    "n": 40,
+    "at": 1789305595526
+  },
+  "Boss OD-3": {
+    "medianAsk": 128,
+    "n": 36,
+    "at": 1789305595526
+  },
+  "Boss MT-2": {
+    "medianAsk": 104,
+    "n": 37,
+    "at": 1789305595526
+  },
+  "Boss DS-2": {
+    "medianAsk": 104,
+    "n": 39,
+    "at": 1789305595526
+  },
+  "Boss RC-3": {
+    "medianAsk": 161,
+    "n": 32,
+    "at": 1789305595526
+  },
+  "Boss CE-5": {
+    "medianAsk": 136,
+    "n": 39,
+    "at": 1789305595526
+  },
+  "Boss TR-2": {
+    "medianAsk": 110,
+    "n": 38,
+    "at": 1789305595526
+  },
+  "Boss NS-2": {
+    "medianAsk": 109,
+    "n": 40,
+    "at": 1789305595526
+  },
+  "Ibanez TS9": {
+    "medianAsk": 136,
+    "n": 39,
+    "at": 1789305595526
+  },
+  "Ibanez TS808": {
+    "medianAsk": 210,
+    "n": 38,
+    "at": 1789305595526
+  },
+  "Ibanez Tube Screamer Mini": {
+    "medianAsk": 154,
+    "n": 37,
+    "at": 1789305595526
+  },
+  "MXR Phase 90": {
+    "medianAsk": 158,
+    "n": 40,
+    "at": 1789305595526
+  },
+  "MXR Carbon Copy": {
+    "medianAsk": null,
+    "n": 2,
+    "at": 1789305595526
+  },
+  "MXR Dyna Comp": {
+    "medianAsk": 160,
+    "n": 38,
+    "at": 1789305595526
+  },
+  "MXR Distortion+": {
+    "medianAsk": 114,
+    "n": 33,
+    "at": 1789305595526
+  },
+  "Electro-Harmonix Big Muff": {
+    "medianAsk": 178,
+    "n": 37,
+    "at": 1789305595526
+  },
+  "Electro-Harmonix Soul Food": {
+    "medianAsk": 178,
+    "n": 38,
+    "at": 1789305595526
+  },
+  "Electro-Harmonix Holy Grail": {
+    "medianAsk": 178,
+    "n": 36,
+    "at": 1789305595526
+  },
+  "Dunlop Cry Baby": {
+    "medianAsk": 96,
+    "n": 36,
+    "at": 1789305595526
+  },
+  "TC Electronic Polytune": {
+    "medianAsk": 99,
+    "n": 34,
+    "at": 1789305595526
+  },
+  "TC Electronic Ditto": {
+    "medianAsk": 136,
+    "n": 36,
+    "at": 1789305595526
+  },
+  "Wampler Tumnus": {
+    "medianAsk": 329,
+    "n": 22,
+    "at": 1789305595526
+  },
+  "Boss Katana 50": {
+    "medianAsk": null,
+    "n": 4,
+    "at": 1789305595526
+  },
+  "Shure SM57": {
+    "medianAsk": 175,
+    "n": 18,
+    "at": 1789305595526
+  },
+  "Shure Beta 58A": {
+    "medianAsk": 362,
+    "n": 30,
+    "at": 1789305595526
+  },
+  "Sennheiser e835": {
+    "medianAsk": 173,
+    "n": 20,
+    "at": 1789305595526
+  },
+  "Sennheiser e609": {
+    "medianAsk": 410,
+    "n": 9,
+    "at": 1789305595526
+  },
+  "Audio-Technica AT2020": {
+    "medianAsk": 109,
+    "n": 30,
+    "at": 1789305595526
+  },
+  "Rode NT1-A": {
+    "medianAsk": 149,
+    "n": 29,
+    "at": 1789305595526
+  },
+  "Rode NT-USB": {
+    "medianAsk": 115,
+    "n": 22,
+    "at": 1789305595526
+  },
+  "Focusrite Scarlett Solo": {
+    "medianAsk": 112,
+    "n": 34,
+    "at": 1789305595526
+  },
+  "Focusrite Scarlett 4i4": {
+    "medianAsk": 179,
+    "n": 11,
+    "at": 1789305595526
+  },
+  "Behringer UMC22": {
+    "medianAsk": 83,
+    "n": 15,
+    "at": 1789305595526
+  },
+  "Zoom H1n": {
+    "medianAsk": 116,
+    "n": 35,
+    "at": 1789305595526
+  },
+  "Line 6 HX Stomp": {
+    "medianAsk": 592,
+    "n": 33,
+    "at": 1789305595526
+  },
+  "Worcester Greenstar fan": {
+    "medianAsk": 71,
+    "n": 38,
+    "at": 1789305646134
+  },
+  "Baxi fan": {
+    "medianAsk": 60,
+    "n": 37,
+    "at": 1789305646134
+  },
+  "Glow-worm fan": {
+    "medianAsk": 78,
+    "n": 33,
+    "at": 1789305646134
+  },
+  "Vaillant pump": {
+    "medianAsk": 90,
+    "n": 36,
+    "at": 1789305646134
+  },
+  "Worcester Greenstar pump": {
+    "medianAsk": 85,
+    "n": 23,
+    "at": 1789305646134
+  },
+  "Grundfos UPS3": {
+    "medianAsk": 81,
+    "n": 18,
+    "at": 1789305646134
+  },
+  "Baxi diverter valve": {
+    "medianAsk": 113,
+    "n": 35,
+    "at": 1789305646134
+  },
+  "Ideal Logic diverter valve": {
+    "medianAsk": 64,
+    "n": 17,
+    "at": 1789305646134
+  },
+  "Honeywell V4044": {
+    "medianAsk": null,
+    "n": 4,
+    "at": 1789305646134
+  },
+  "Danfoss HSA3": {
+    "medianAsk": null,
+    "n": 0,
+    "at": 1789305646134
+  },
+  "Vaillant gas valve": {
+    "medianAsk": 74,
+    "n": 37,
+    "at": 1789305646134
+  },
+  "Worcester gas valve": {
+    "medianAsk": 58,
+    "n": 36,
+    "at": 1789305646134
+  },
+  "Ideal Logic gas valve": {
+    "medianAsk": 58,
+    "n": 32,
+    "at": 1789305646134
+  },
+  "Baxi gas valve": {
+    "medianAsk": 55,
+    "n": 37,
+    "at": 1789305646134
+  },
+  "Vaillant heat exchanger": {
+    "medianAsk": 87,
+    "n": 35,
+    "at": 1789305646134
+  },
+  "Worcester heat exchanger": {
+    "medianAsk": 139,
+    "n": 40,
+    "at": 1789305646134
+  },
+  "Ideal Logic heat exchanger": {
+    "medianAsk": 95,
+    "n": 31,
+    "at": 1789305646134
+  },
+  "Vaillant expansion vessel": {
+    "medianAsk": 66,
+    "n": 32,
+    "at": 1789305646134
+  },
+  "Worcester expansion vessel": {
+    "medianAsk": 65,
+    "n": 38,
+    "at": 1789305646134
+  },
+  "Vaillant pressure sensor": {
+    "medianAsk": null,
+    "n": 0,
+    "at": 1789305646134
+  },
+  "Ideal Logic PCB 175594": {
+    "medianAsk": null,
+    "n": 0,
+    "at": 1789305646134
+  },
+  "Worcester 87161463280": {
+    "medianAsk": null,
+    "n": 1,
+    "at": 1789305646134
+  },
+  "Baxi 5121495": {
+    "medianAsk": null,
+    "n": 0,
+    "at": 1789305646134
+  },
+  "Vaillant 0020052021": {
+    "medianAsk": null,
+    "n": 0,
+    "at": 1789305646134
+  }
+}

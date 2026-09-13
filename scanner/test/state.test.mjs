@@ -19,5 +19,11 @@ test("slug is safe and two queries can't collide silently", () => {
 });
 
 test("fromDocs on an empty dump yields nothing", () => {
-  assert.deepEqual(fromDocs({}), { watchlist: [], market: null, sold: {} });
+  assert.deepEqual(fromDocs({}), { watchlist: [], market: null, sold: {}, pricelist: null });
+});
+
+test("the job-lot price list round-trips", () => {
+  const docs = toDocs([], null, null, 5, { "Boss SD-1": { medianAsk: 50, n: 12, at: 5 } });
+  assert.deepEqual(fromDocs(docs).pricelist, { "Boss SD-1": { medianAsk: 50, n: 12, at: 5 } });
+  assert.ok(!("pricelist" in toDocs([], null, null, 5, {})), "nothing priced → no doc");
 });

@@ -27,6 +27,7 @@ Production (no approval step; 5,000 calls/day) — no closed sold-price API need
 | `radar.mjs` | `npm run radar -- "niche"` — active-listing count + median asking for Demand Radar's competition side. |
 | `watch.mjs` | `npm run watch -- <url\|id>` — is one listing still live? (Build Plan stage 05.) |
 | `track.mjs` | `npm run track` — re-checks every listing a scan recorded; builds your own sold-price history and `data/market.json` (sell-through, est. sold, target buy per search). `npm run market` prints it without API calls. |
+| `lots.mjs` | `npm run lots` — job lots & bundles: finds lot-style listings, reads each description, adds up the items it recognises from `market.json` / `pricelist.json`, and flags the lot when it costs ≤60% of those parts. `publish.mjs` sends its `data/lot-results.json` to Discover alongside the scan. |
 | `sold.mjs` | `npm run sold -- "Boss DS-1" 65 70 62` — enter real sold prices you read off ebay.ie ("Sold items" filter). Verified prices outrank the tracker's inferences. |
 | `store.mjs` | The scanner's memory on disk: `data/watchlist.json`, `market.json`, `sold.json`. |
 | `state.mjs` | That memory in Scout's database (collection `scanner`, one doc per search), so a scheduled run that can't push to git still carries tracking forward. `npm run state:export` / `state:import <dump>`. |
@@ -120,6 +121,31 @@ The scanner reads `market.json` on its next run: anything at or under
 numbers. The longer it runs, the less it leans on asking prices. Budget: ~30
 calls per search per track run, so 7 searches ≈ 210 calls/day plus 14 for the
 scan, well inside 5,000. `npm run daily` does both.
+
+### Job lots — the pieces are worth more than the box
+
+`lots.mjs` plays a different game from the scan. Instead of "is this one item
+cheap next to its peers?", it looks for listings that bundle several things
+("job lot", "bundle", "x4", "lot of") and asks what the pieces would fetch apart:
+
+1. Search each niche's `lotSearches` (fixed price **and** auctions, delivered to IE).
+2. Keep the lot-looking titles, read each listing's description (1 call each,
+   titles rarely list the contents; `--no-detail` skips this).
+3. Find every item we have a price for — verified sold prices first, then the
+   tracker's estimate, then 60% of the median asking (what used gear actually
+   sells for). A config's `lotCatalogue` adds items priced just for this
+   (one call each, cached a week in `data/pricelist.json`).
+4. Add them up — "2× Boss DS-1, 1× Shure SM58 = ~€152" — and flag the lot when
+   the landed price is ≤60% of that and at least €25 under it.
+
+Only recognised items count. Ten pedals where we know two are valued on the two;
+the rest is upside, not a reason to buy. An item's name followed by *pouch*,
+*case*, *motor*, *adaptor*, *software*… is an accessory and is not counted
+("6 x Shure SM58 mic pouches" is six pouches). Listings marked for parts /
+untested are skipped — that is the refurbishment game, not this one. Each
+candidate's reasoning says exactly what was counted so you can check the sold
+prices item by item. First live run (Sep 2026): 78 lots read, 0 candidates —
+used-gear lots on eBay are mostly priced by people who know what they have.
 
 ### Where the memory lives
 

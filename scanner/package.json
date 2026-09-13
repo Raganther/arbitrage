@@ -2,9 +2,11 @@
   "name": "scout-scanner",
   "version": "0.2.0",
   "private": true,
-  "description": "eBay Browse API scanner for Scout — finds underpriced active listings for a niche.",
+  "description": "eBay Browse API scanner for Scout \u2014 finds underpriced active listings for a niche.",
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "check": "node check.mjs",
     "check:sandbox": "node check.mjs --sandbox",
@@ -19,7 +21,8 @@
     "publish": "node publish.mjs",
     "state:export": "node state.mjs export",
     "state:import": "node state.mjs import",
-    "daily": "node scan.mjs --config configs/music-gear.json --config configs/trade-parts.json && node track.mjs",
-    "test": "node --test test/*.test.mjs"
+    "daily": "node scan.mjs --config configs/music-gear.json --config configs/trade-parts.json && node track.mjs && node lots.mjs --config configs/music-gear.json --config configs/trade-parts.json",
+    "test": "node --test test/*.test.mjs",
+    "lots": "node lots.mjs --config configs/music-gear.json --config configs/trade-parts.json"
   }
 }
