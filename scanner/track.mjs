@@ -29,11 +29,21 @@ export function classify(entry, s, now = Date.now()) {
     return { ...entry, status: "active", lastChecked: now, endsAt: s.endsAt || entry.endsAt, price: isFinite(s.price) ? s.price : entry.price };
   }
   if (s.status === "ended") {
+    // Fixed-price listings on eBay are "Good 'Til Cancelled": no end date, they renew until they sell or the
+    // seller pulls them. So an ended listing with no scheduled end is a sale (or a withdrawal — the tracker can't
+    // tell, and accepts that). Only a listing with a real end date that reached it counts as expired.
     const scheduled = Date.parse(entry.endsAt || "") || 0;
-    const endedEarly = scheduled - now > DAY;           // still had >1 day to run → it sold
-    return { ...entry, status: endedEarly ? "sold-likely" : "expired", lastChecked: now, closedAt: now, closedPrice: endedEarly ? entry.landed : undefined };
+    const sold = !scheduled || scheduled - now > DAY;   // GTC, or still had >1 day to run → it sold
+    return { ...entry, status: sold ? "sold-likely" : "expired", lastChecked: now, closedAt: now, closedPrice: sold ? entry.landed : undefined };
   }
   return { ...entry, status: "removed", lastChecked: now, closedAt: now }; // gone: sold or withdrawn — not counted in prices
+}
+
+/** Entries closed by the old rule (ended + no end date = "expired") were sales; relabel them. Pure; tested. */
+export function repairWatchlist(watchlist) {
+  let n = 0;
+  for (const e of watchlist) if (e.status === "expired" && !e.endsAt) { e.status = "sold-likely"; e.closedPrice = e.landed; n++; }
+  return n;
 }
 
 /** Per-query market read from the watchlist plus any verified sold prices (sold.json). Pure; tested. */
@@ -89,7 +99,13 @@ async function main() {
   if (args.sandbox) process.env.EBAY_ENV = "sandbox";
   const dir = args.data ? String(args.data) : undefined;
   const watchlist = loadWatchlist(dir);
+  const repaired = repairWatchlist(watchlist);
+  if (repaired) console.log(`Relabelled ${repaired} ended fixed-price listing(s) as likely sold (they had no end date to expire at).`);
   if (args.report) { printMarket(computeMarket(watchlist, Date.now(), {}, loadSold(dir))); return; }
+  if (args["no-check"]) {   // recompute from what we know, no API calls
+    saveWatchlist(watchlist, dir);
+    const market = computeMarket(watchlist, Date.now(), {}, loadSold(dir)); saveMarket(market, dir); printMarket(market); return;
+  }
   if (!watchlist.length) { console.log("Nothing tracked yet — run a scan first (node scan.mjs); it records the comps it sees into " + dataPath("watchlist.json", dir)); return; }
 
   const client = clientFromEnv(process.env, { log: (m) => console.log("  · " + m) });

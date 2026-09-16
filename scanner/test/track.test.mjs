@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { classify, computeMarket } from "../track.mjs";
+import { classify, computeMarket, repairWatchlist } from "../track.mjs";
 import { rememberComps } from "../store.mjs";
 import { findCandidates, DEFAULT_CONFIG } from "../scan.mjs";
 import { summarise } from "../ebay.mjs";
@@ -9,6 +9,14 @@ import { makeItem } from "./fake-ebay.mjs";
 const DAY = 86_400_000;
 const T0 = Date.parse("2026-09-01T00:00:00Z");
 const entry = (over = {}) => ({ id: "1", itemId: "v1|1|0", query: "Boss DS-1", title: "Boss DS-1", price: 60, landed: 68, endsAt: new Date(T0 + 20 * DAY).toISOString(), firstSeen: T0, status: "active", ...over });
+
+test("a Good 'Til Cancelled listing (no end date) that ends has sold; repairWatchlist relabels old mistakes", () => {
+  const gtc = classify(entry({ endsAt: "" }), { status: "ended", endsAt: "" }, T0 + 5 * DAY);
+  assert.equal(gtc.status, "sold-likely"); assert.equal(gtc.closedPrice, 68);
+  const list = [entry({ id: "a", status: "expired", endsAt: "" }), entry({ id: "b", status: "expired" }), entry({ id: "c", status: "active", endsAt: "" })];
+  assert.equal(repairWatchlist(list), 1);
+  assert.equal(list[0].status, "sold-likely"); assert.equal(list[0].closedPrice, 68); assert.equal(list[1].status, "expired"); assert.equal(list[2].status, "active");
+});
 
 test("classify: ended with >1 day left = sold-likely at asking; ended on schedule = expired; 404 = removed", () => {
   const sold = classify(entry(), { status: "ended", endsAt: "" }, T0 + 5 * DAY);

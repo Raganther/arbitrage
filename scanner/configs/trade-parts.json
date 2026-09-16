@@ -35,7 +35,22 @@
     "ignition",
     "venturi only",
     "motor",
-    "actuator"
+    "actuator",
+    "microswitch",
+    "micro switch",
+    "switch",
+    "transformer",
+    "proving",
+    "relay",
+    "fuse",
+    "capacitor",
+    "harness",
+    "wiring",
+    "plug",
+    "connector",
+    "knob",
+    "pcb cover",
+    "board cover"
   ],
   "minMarginEur": 15,
   "assumedPostage": {
