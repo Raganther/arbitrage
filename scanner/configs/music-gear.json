@@ -85,6 +85,22 @@
       ]
     }
   ],
+  "_noteTypos": "Each word is swapped for each misspelling to make extra searches (auto-correct off); hits are valued against the correctly spelled search.",
+  "typos": {
+    "Focusrite": [
+      "Focusright",
+      "Focusrit"
+    ],
+    "Scarlett": [
+      "Scarlet"
+    ],
+    "Shure": [
+      "Shur"
+    ],
+    "Korg": [
+      "Korgh"
+    ]
+  },
   "_note": "A query can be {q, exclude:[...]} — words that mark a different variant of the product (bigger/smaller model, other generation) so the median stays like-for-like.",
   "_note2": "Scarlett 2i2 is split by generation: verified sold prices (Sep 2026) are ~€55 (1st), ~€65 (2nd), ~€95 (3rd), ~€165 (4th) — one blended search made 1st-gen units look like bargains.",
   "lotSearches": [

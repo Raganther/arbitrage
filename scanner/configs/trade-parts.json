@@ -18,6 +18,27 @@
     "Vaillant fan",
     "Ideal Logic fan"
   ],
+  "_noteTypos": "Each word is swapped for each misspelling to make extra searches (auto-correct off); hits are valued against the correctly spelled search.",
+  "typos": {
+    "Vaillant": [
+      "Vailant",
+      "Valliant",
+      "Vaillent"
+    ],
+    "Worcester": [
+      "Worchester",
+      "Worcestor",
+      "Worcster"
+    ],
+    "Grundfos": [
+      "Grundfoss",
+      "Grunfos"
+    ],
+    "Honeywell": [
+      "Honywell",
+      "Honeywel"
+    ]
+  },
   "_note": "PCB searches mix €100 main boards with €20 display/interface boards; keep each search to one part type so the median means something.",
   "excludeWordsExtra": [
     "display",
@@ -52,7 +73,6 @@
     "pcb cover",
     "board cover"
   ],
-  "minMarginEur": 15,
   "assumedPostage": {
     "home": 8,
     "eu": 15,

@@ -5,10 +5,15 @@
  * How it works (honestly):
  *   The eBay Browse API gives ACTIVE listings only (never final sold prices).
  *   So this scanner spots deals relative to the crowd: for each specific item,
- *   it pulls current listings, takes the MEDIAN landed price (item + postage)
- *   as a rough market value, and flags listings priced well below it. That is a
- *   candidate, not a guarantee — you confirm the real resale value (eBay SOLD
- *   comps) in Scout.
+ *   it pulls current listings and takes the MEDIAN landed price (item + postage).
+ *   Used items SELL for ~60% of that median asking (verified Sep 2026), so the
+ *   value is verified sold prices when we have them, else 0.6 × median asking.
+ *   A listing is a candidate only if buying it (landed, plus Irish import VAT
+ *   for non-EU sellers) and reselling it at that value clears a minimum NET
+ *   profit and ROI after selling fees, postage and packaging. It also looks at
+ *   auctions ending soon (with a max bid) and misspelled titles, where the real
+ *   mispricing on eBay tends to be. Still a candidate, not a guarantee — you
+ *   confirm the real resale value (eBay SOLD comps) in Scout.
  *
  * It writes scan-results.json — a list of discovery objects matching the schema
  * in ../SCANNER.md — which you then import into Scout's Discover tab.
@@ -47,12 +52,30 @@ export const DEFAULT_CONFIG = {
   conditions: ["USED"],  // USED | NEW | UNSPECIFIED — comps must be like-for-like
   compsPerQuery: 40,     // listings to sample when computing the median (1 API call ≤ 200)
   minComps: 5,           // fewer than this and the median isn't trusted
-  // Calibrated on verified sold prices (Sep 2026: SM58, Scarlett 2i2, Ideal Logic fan, Hall of Fame 2):
-  // used items SELL for roughly 50–65% of the median ASKING price. So "30% under asking" ≈ the sold
-  // price ≈ zero margin. A candidate must be at least 50% under the median asking to be worth a look.
-  discount: 0.50,        // flag listings >= 50% below the median landed asking price
-  minMarginEur: 15,      // and at least this many EUR below it
+  // Calibrated on verified sold prices (Sep 2026: SM58, Scarlett 2i2, Ideal Logic fan, Vaillant boards):
+  // used items SELL for roughly 45–70% of the median ASKING price. With no verified or tracked sales for a
+  // search, the resale value is askToSold × the median asking.
+  askToSold: 0.6,
+  // Reselling costs (eBay.ie defaults — check whether private-seller fees still apply to you).
+  sellFeePct: 0.13,
+  sellFixedFee: 0.35,
+  sellPostage: null,     // postage you pay when you sell; null → assumedPostage.home
+  packaging: 1,
+  // A candidate must clear BOTH, after buy cost, import VAT, selling fees, postage and packaging.
+  minProfitEur: 15,
+  minRoi: 0.3,
+  // Irish VAT on goods from outside the EU — GB since Brexit (Northern Ireland, BT postcodes, excepted).
+  // eBay adds it at checkout, so the listed price doesn't show it. Customs duty over €150 isn't modelled.
+  importVat: 0.23,
+  discount: 0.50,        // the cheap-band search looks at listings up to this far under the median asking
   maxPerQuery: 3,        // keep at most this many candidates per query
+  // Auctions ending soon: the current bid is not the final price, so these come with a max bid.
+  auctions: true,
+  auctionHours: 24,
+  auctionLimit: 50,
+  // Misspelled titles get fewer buyers. Each word here is swapped for each typo to make extra searches
+  // (eBay's auto-correct is off for these). Per-niche maps live in the config files.
+  typos: {},
   excludeWords: ["parts", "spares", "repair", "faulty", "broken", "not working", "for parts", "case only", "box only", "manual only"],
   // Accessories and ephemera that share the product's name but aren't the product.
   accessoryWords: ["case", "bag", "cover", "sleeve", "pouch", "adapter", "adaptor", "charger", "power supply", "psu", "cable", "lead",
@@ -70,7 +93,9 @@ export const DEFAULT_CONFIG = {
   cheapBandLimit: 50,       // second, targeted search of the cheap band (1 extra call per query)
   // When a listing doesn't state postage ("calculated"), assume this much by origin so landed prices stay honest.
   homeCountry: "IE",
-  euCountries: ["IE", "GB", "DE", "FR", "NL", "BE", "IT", "ES", "AT", "PT", "PL", "CZ", "DK", "SE", "FI", "LU"],
+  euCountries: ["IE", "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IT", "LV", "LT", "LU", "MT", "NL",
+    "PL", "PT", "RO", "SK", "SI", "ES", "SE"],
+  nearCountries: ["GB"],    // not EU (import VAT applies) but postage is priced like the EU tier
   assumedPostage: { home: 8, eu: 15, other: 30 },
   watchPerQuery: 30,        // comps per query to keep tracking (1 API call each per track run)
 };
@@ -120,7 +145,7 @@ export function looksAccessory(title, q, words) {
 export function withAssumedPostage(l, cfg) {
   if (l.shipping != null || !isFinite(l.price) || !cfg.assumedPostage) return l;
   const loc = (l.location || "").toUpperCase();
-  const tier = loc === (cfg.homeCountry || "IE") ? "home" : (cfg.euCountries || []).includes(loc) ? "eu" : "other";
+  const tier = loc === (cfg.homeCountry || "IE") ? "home" : (cfg.euCountries || []).includes(loc) || (cfg.nearCountries || []).includes(loc) ? "eu" : "other";
   const est = Number(cfg.assumedPostage[tier]);
   if (!isFinite(est)) return l;
   return { ...l, landed: l.price + est, assumedShipping: est };
@@ -131,8 +156,41 @@ export function relevant(listings, q, cfg) {
   return listings.map((l) => withAssumedPostage(l, cfg)).filter((l) => isFinite(l.landed) && l.landed > 0 &&
     !looksBroken(l.title, cfg.excludeWords || []) &&
     !looksBroken(l.cond || "", ["parts", "not working", "defective", "faulty"]) && String(l.conditionId) !== "7000" &&
-    !looksAccessory(l.title, q, cfg.accessoryWords || []) &&
-    (cfg.requireQueryWords === false || matchesQuery(l.title, q)));
+    !looksAccessory(l.title, l.matchQuery || q, cfg.accessoryWords || []) &&
+    (cfg.requireQueryWords === false || matchesQuery(l.title, l.matchQuery || q)));
+}
+
+export const isAuction = (l) => (l.buyingOptions || []).includes("AUCTION") && !(l.buyingOptions || []).includes("FIXED_PRICE");
+
+/** Irish import VAT owed on a listing's landed price: 0 from the EU (and Northern Ireland) or an unknown origin. */
+export function importTax(l, cfg) {
+  const rate = Number(cfg.importVat) || 0;
+  const loc = (l.location || "").toUpperCase();
+  if (!rate || !loc || !isFinite(l.landed) || (cfg.euCountries || []).includes(loc)) return 0;
+  if (loc === "GB" && /^BT/i.test(l.postcode || "")) return 0;
+  return l.landed * rate;
+}
+
+/**
+ * Flip economics for a resale value: what you net after selling fees, postage and packaging, and the most you
+ * can pay all-in (landed + import VAT) and still clear minProfitEur and minRoi. Pure; tested.
+ */
+export function flipEconomics(value, cfg) {
+  const post = cfg.sellPostage != null ? cfg.sellPostage : (cfg.assumedPostage && cfg.assumedPostage.home != null ? cfg.assumedPostage.home : 8);
+  const fees = value * (cfg.sellFeePct ?? 0.13) + (cfg.sellFixedFee ?? 0.35);
+  const proceeds = value - fees - post - (cfg.packaging ?? 1);
+  const maxCost = Math.min(proceeds - (cfg.minProfitEur ?? 15), proceeds / (1 + (cfg.minRoi ?? 0.3)));
+  return { proceeds, maxCost, fees, postage: post };
+}
+
+/** Typo variants of a query from a { word: [typos] } map — one search each. */
+export function typoQueries(q, typos = {}) {
+  const out = [];
+  for (const [word, list] of Object.entries(typos || {})) {
+    const re = new RegExp("(^|\\s)" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=\\s|$)", "i");
+    if (re.test(q)) for (const t of [].concat(list)) out.push(q.replace(re, "$1" + t));
+  }
+  return out;
 }
 
 /** Turn one query's listings into discovery docs (pure; unit-tested). */
@@ -145,26 +203,46 @@ export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now
   const comps = useNear ? near : clean;
   const mid = median(comps.map((l) => l.landed));
   const mk = market && market[q] && market[q].targetBuy ? market[q] : null;
-  // With tracked sales data, the ceiling is the market's targetBuy; otherwise the discount-under-median rule.
-  const threshold = mk ? Math.max(mk.targetBuy, mid * (1 - cfg.discount)) : mid * (1 - cfg.discount);
+  const askToSold = cfg.askToSold == null ? 0.6 : cfg.askToSold;
+  const tracked = !!(mk && mk.estSold);
+  const value = tracked ? mk.estSold : Math.round(mid * askToSold);
+  const basis = !tracked ? "asking-x" + askToSold : mk.basis === "verified" ? "verified-sales" : "tracked-sales";
+  const econ = flipEconomics(value, cfg);
+  // The stricter of the profit ceiling and the market's targetBuy.
+  const maxCost = mk ? Math.min(econ.maxCost, mk.targetBuy) : econ.maxCost;
+  if (!(maxCost > 0)) return [];
   const floor = mid * (cfg.minFraction == null ? 0.25 : cfg.minFraction);
   const seen = new Set();
   const pool = clean.concat(relevant(extra, q, cfg)).filter((l) => { const k = l.itemId || l.url || l.title; if (seen.has(k)) return false; seen.add(k); return true; });
+  const eur = (n) => "€" + Math.round(n);
   return pool
-    .filter((l) => l.landed <= threshold && l.landed >= floor && (mid - l.landed) >= cfg.minMarginEur)
-    .sort((a, b) => (mid - b.landed) - (mid - a.landed))
+    .map((l) => { const vat = importTax(l, cfg); return { l, vat, cost: l.landed + vat, auction: isAuction(l) }; })
+    // An auction's low current bid is expected, so the too-cheap-to-be-real floor applies to fixed prices only.
+    .filter((x) => x.cost <= maxCost && (x.auction || x.l.landed >= floor))
+    .map((x) => ({ ...x, net: econ.proceeds - x.cost }))
+    .sort((a, b) => b.net - a.net)
     .slice(0, cfg.maxPerQuery)
-    .map((l) => {
-      const under = Math.round((1 - l.landed / mid) * 100);
+    .map(({ l, vat, cost, auction, net }) => {
       const shipNote = l.assumedShipping != null ? "postage not stated, ~€" + l.assumedShipping + " assumed" :
         l.shipping == null ? "postage unknown" : l.shipping === 0 ? "free postage" : "incl. €" + l.shipping.toFixed(2) + " postage";
+      const ship = l.assumedShipping != null ? l.assumedShipping : l.shipping || 0;
+      const maxBid = auction ? Math.floor(maxCost / (1 + (vat ? cfg.importVat : 0)) - ship) : undefined;
+      const roi = Math.round((net / cost) * 100);
+      const lead = (l.matchQuery && l.matchQuery !== q ? "Misspelled title (\"" + l.matchQuery + "\") — fewer buyers find it. " : "") +
+        (auction ? "Auction, " + (l.bidCount || 0) + " bid" + (l.bidCount === 1 ? "" : "s") + (l.endsAt ? ", ends " + l.endsAt.slice(0, 16).replace("T", " ") + " UTC" : "") +
+          ": current bid €" + Math.round(l.price) + " (" + shipNote + "). Bid up to €" + maxBid + ". " :
+          "Listed at €" + Math.round(l.price) + " (" + shipNote + "). ");
       return {
         id: l.legacyItemId ? "ebay-" + l.legacyItemId : undefined,
         title: l.title,
-        price: Math.round(l.landed * 100) / 100,   // landed = item + postage to you
-        estResale: mk && mk.estSold ? mk.estSold : Math.round(mid),   // tracked sold estimate when we have one, else median asking
-        estBasis: mk && mk.estSold ? "tracked-sales" : "median-asking",
-        targetBuy: mk ? mk.targetBuy : undefined,
+        price: Math.round(cost * 100) / 100,   // all-in: item + postage to you + import VAT
+        estResale: value,
+        estBasis: basis,
+        targetBuy: Math.floor(maxCost),
+        netProfit: Math.round(net),
+        roi,
+        ...(auction ? { auction: true, maxBid, bidCount: l.bidCount || 0 } : {}),
+        ...(l.matchQuery && l.matchQuery !== q ? { typo: l.matchQuery } : {}),
         cond: l.cond,
         soldQuery: q,
         category: cfg.niche,
@@ -173,11 +251,11 @@ export function findCandidates(q, listings, cfg = DEFAULT_CONFIG, now = Date.now
         image: l.image || "",
         itemId: l.itemId || "",
         endsAt: l.endsAt || "",
-        reasoning: "Listed at €" + Math.round(l.price) + " (" + shipNote + "), ~" + under + "% under the €" +
-          Math.round(mid) + " median for \"" + q + "\" (" + comps.length + " comps" + (useNear ? ", " + (clean.length - near.length) + " overseas asks excluded" : "") +
-          (l.location ? ", ships from " + l.location : "") + ")." +
-          (mk && mk.estSold ? " Tracked sales say ~€" + mk.estSold + " (" + mk.sellThrough + "% sell-through); target buy ≤€" + mk.targetBuy + "." :
-            mk ? " Target buy ≤€" + mk.targetBuy + " (proxy, no sales tracked yet)." : "") + " Confirm in sold listings.",
+        reasoning: lead + (vat ? "+" + eur(vat) + " import VAT (ships from " + l.location + "). " : "") +
+          "Worth ~" + eur(value) + " (" + (tracked ? (mk.basis === "verified" ? "verified sold prices" : "tracked sales, capped") : Math.round(askToSold * 100) + "% of the " + eur(mid) + " median asking") +
+          "); after " + eur(econ.fees) + " fees and " + eur(econ.postage) + " postage it nets ~" + eur(econ.proceeds) + ", so ~" + eur(net) + " profit (" + roi + "% ROI) on " + eur(cost) +
+          " all-in. Ceiling " + eur(maxCost) + ". Median asking " + eur(mid) + " across " + comps.length + " comps" + (useNear ? " (" + (clean.length - near.length) + " overseas asks excluded)" : "") +
+          (l.location && !vat ? ", ships from " + l.location : "") + ". Confirm in sold listings.",
         foundAt: now,
         status: "new",
       };
@@ -216,9 +294,13 @@ export function resolveConfig(args, env = process.env) {
 /** A query is a string or { q, exclude: [...] } — per-search words to drop (variants like "X4", "mini"). */
 export function normQuery(entry) { return typeof entry === "string" ? { q: entry, exclude: [] } : { q: String(entry.q), exclude: entry.exclude || [] }; }
 
+const au_n = (xs) => xs.filter(isAuction).length;
+const typo_n = (xs) => xs.filter((l) => l.matchQuery).length;
+export const byProfit = (a, b) => (b.netProfit ?? b.estResale - b.price) - (a.netProfit ?? a.estResale - a.price);
+
 export async function runScan(client, cfg0, { log = console.log, now = () => Date.now(), watchlist = null, market = null } = {}) {
   const results = [];
-  const stats = { queries: 0, listings: 0, candidates: 0, errors: 0, tracked: 0 };
+  const stats = { queries: 0, listings: 0, candidates: 0, errors: 0, tracked: 0, auctions: 0, typos: 0 };
   for (const entry of cfg0.queries) {
     const { q, exclude } = normQuery(entry);
     const cfg = exclude.length ? { ...cfg0, excludeWords: (cfg0.excludeWords || []).concat(exclude.map((w) => w.toLowerCase())) } : cfg0;
@@ -250,18 +332,36 @@ export async function runScan(client, cfg0, { log = console.log, now = () => Dat
         extra = band.items;
         stats.listings += extra.length;
       }
+      // 3) Auctions ending soon — valued against the fixed-price comps above, never part of them.
+      if (comps.length >= (cfg.minComps || 5) && cfg.auctions) {
+        const until = new Date(now() + (cfg.auctionHours || 24) * 3600_000).toISOString();
+        const au = await client.search({ q, limit: cfg.auctionLimit || 50, sort: "endingSoonest",
+          filter: { ...filter, buyingOptions: ["AUCTION"], raw: "itemEndDate:[.." + until + "]" } });
+        const auctions = au.items.filter(isAuction);
+        stats.listings += auctions.length; stats.auctions += auctions.length;
+        extra = extra.concat(auctions);
+      }
+      // 4) Misspelled titles: auto-correct off, matched against the typo, valued against the real product.
+      if (comps.length >= (cfg.minComps || 5)) {
+        for (const tq of typoQueries(q, cfg.typos)) {
+          const ty = await client.search({ q: tq, limit: 50, autoCorrect: false, filter: { ...filter, buyingOptions: ["FIXED_PRICE", "AUCTION"] } });
+          const hits = ty.items.filter((l) => !matchesQuery(l.title, q)).map((l) => ({ ...l, matchQuery: tq }));
+          stats.listings += hits.length; stats.typos += hits.length;
+          extra = extra.concat(hits);
+        }
+      }
       const found = findCandidates(q, items, cfg, now(), extra, market);
       stats.candidates += found.length;
       let added = 0;
       if (watchlist) { added = rememberComps(watchlist, q, comps, { now: now(), perQuery: cfg.watchPerQuery || 30 }); stats.tracked += added; }
-      log("• " + q + ": " + comps.length + " comps from " + items.length + " sampled (" + total + " total), " + extra.length + " in the cheap band, " + found.length + " candidate(s)" + (watchlist ? ", +" + added + " tracked" : ""));
+      log("• " + q + ": " + comps.length + " comps from " + items.length + " sampled (" + total + " total), " + extra.length + " in the cheap band, " + (cfg.auctions ? au_n(extra) + " auctions, " : "") + typo_n(extra) + " misspelled, " + found.length + " candidate(s)" + (watchlist ? ", +" + added + " tracked" : ""));
       results.push(...found);
     } catch (e) {
       stats.errors++;
       log("  ! " + q + ": " + e.message);
     }
   }
-  results.sort((a, b) => (b.estResale - b.price) - (a.estResale - a.price));
+  results.sort(byProfit);
   return { results, stats };
 }
 
@@ -286,10 +386,10 @@ async function main() {
     catch (e) { console.error(e.message + "\n  Copy .env.example to .env and fill it in, or run with --dry-run."); process.exit(1); }
     const watchlist = loadWatchlist(dir), market = loadMarket(dir);
     results = [];
-    const totals = { listings: 0, candidates: 0, tracked: 0, errors: 0 };
+    const totals = { listings: 0, candidates: 0, tracked: 0, errors: 0, auctions: 0, typos: 0 };
     for (const c of cfgs) {
       client.marketplace = c.marketplace;
-      console.log(`\nScanning "${c.niche}" on ${c.marketplace} (${client.env}) — ${c.queries.length} queries, ≥${Math.round(c.discount * 100)}% under median, ≥€${c.minMarginEur} gap`);
+      console.log(`\nScanning "${c.niche}" on ${c.marketplace} (${client.env}) — ${c.queries.length} queries, ≥€${c.minProfitEur} net profit and ≥${Math.round(c.minRoi * 100)}% ROI after fees, postage and import VAT${c.auctions ? ", auctions ending within " + c.auctionHours + "h" : ""}`);
       const r = await runScan(client, c, { watchlist, market });
       results.push(...r.results);
       for (const k of Object.keys(totals)) totals[k] += r.stats[k];
@@ -298,9 +398,9 @@ async function main() {
     const byId = new Map();
     for (const r of results) { const k = r.id || r.url || r.title; const prev = byId.get(k); if (!prev || r.estResale < prev.estResale) byId.set(k, r); }
     results = Array.from(byId.values());
-    results.sort((a, b) => (b.estResale - b.price) - (a.estResale - a.price));
+    results.sort(byProfit);
     saveWatchlist(watchlist, dir);
-    console.log(`\n${totals.listings} listings sampled · ${totals.candidates} candidates · ${totals.tracked} new listings tracked (${watchlist.filter((e) => e.status === "active").length} active) · ${totals.errors} errors · ${client.calls.api} API calls (of ~5,000/day)`);
+    console.log(`\n${totals.listings} listings sampled (${totals.auctions} auctions, ${totals.typos} misspelled) · ${totals.candidates} candidates · ${totals.tracked} new listings tracked (${watchlist.filter((e) => e.status === "active").length} active) · ${totals.errors} errors · ${client.calls.api} API calls (of ~5,000/day)`);
     if (!market) console.log("No tracked sales yet — run `node track.mjs` daily; after a couple of weeks estResale switches from median-asking to tracked sales.");
   }
   mkdirSync(dirname(out), { recursive: true });

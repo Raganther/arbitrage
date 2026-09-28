@@ -7,7 +7,10 @@ import { EbayClient, summarise } from "../ebay.mjs";
 import { fakeFetch, makeItem } from "./fake-ebay.mjs";
 import { parseEnv, parseArgs } from "../env.mjs";
 
-const cfg = { ...DEFAULT_CONFIG, niche: "music-gear", discount: 0.3, minMarginEur: 15, maxPerQuery: 3, minComps: 5 };
+// Economics switched to "profit = median asking − landed" so these tests isolate the listing filters;
+// the real economics (fees, postage, VAT, sold ≈ 60% of asking) are tested in economics.test.mjs.
+export const plain = { askToSold: 1, sellFeePct: 0, sellFixedFee: 0, sellPostage: 0, packaging: 0, minProfitEur: 15, minRoi: 0, importVat: 0, auctions: false };
+const cfg = { ...DEFAULT_CONFIG, ...plain, niche: "music-gear", discount: 0.3, maxPerQuery: 3, minComps: 5 };
 const L = (i, price, extra = {}) => summarise(makeItem(i, { price, title: "Boss DS-1 distortion pedal #" + i, ...extra }));
 
 test("median", () => {
@@ -22,7 +25,7 @@ test("findCandidates flags listings well under the median landed price", () => {
   const c = out[0];
   assert.equal(c.price, 60); assert.equal(c.estResale, 100); assert.equal(c.soldQuery, "Boss DS-1");
   assert.equal(c.category, "music-gear"); assert.equal(c.status, "new"); assert.equal(c.foundAt, 123);
-  assert.equal(c.id, "ebay-100000000006"); assert.match(c.reasoning, /40% under the €100 median/);
+  assert.equal(c.id, "ebay-100000000006"); assert.match(c.reasoning, /~€40 profit .*Median asking €100 across 7 comps/);
 });
 
 test("postage counts: a cheap item with dear postage is not a deal", () => {
@@ -41,7 +44,7 @@ test("too few comps → no candidates; broken/parts listings excluded from comps
   assert.equal(findCandidates("Boss DS-1", byCond, cfg).length, 0, "eBay's condition field is checked too");
 });
 
-test("minMarginEur stops tiny absolute gaps on cheap items; maxPerQuery caps", () => {
+test("minProfitEur stops tiny absolute gaps on cheap items; maxPerQuery caps", () => {
   const cheap = [L(1, 20), L(2, 20), L(3, 20), L(4, 20), L(5, 20), L(6, 10)];
   assert.equal(findCandidates("Boss DS-1", cheap, cfg).length, 0, "50% under but only €10 gap");
   const many = [L(1, 100), L(2, 100), L(3, 100), L(4, 100), L(5, 100), L(6, 50), L(7, 40), L(8, 30), L(9, 20)];
@@ -132,7 +135,7 @@ test("parseEnv / parseArgs basics", () => {
 
 test("config *Extra word lists extend the defaults rather than replacing them", () => {
   const { writeFileSync } = require("node:fs");
-  const f = "/tmp/claude-0/-home-user-arbitrage/5b01129f-9330-515c-bfd8-1ccc3ad9a138/scratchpad/cfg-test.json";
+  const f = require("node:path").join(require("node:os").tmpdir(), "scout-cfg-test.json");
   writeFileSync(f, JSON.stringify({ niche: "trade-parts", queries: ["Vaillant PCB"], excludeWordsExtra: ["display"] }));
   const c = resolveConfig(parseArgs(["--config", f]), {});
   assert.ok(c.excludeWords.includes("display") && c.excludeWords.includes("faulty"));
@@ -145,7 +148,7 @@ test("per-query exclude words drop variants from comps and prune them from the w
     T(4, 110, "TC Electronic Hall of Fame 2 used"), T(5, 90, "TC Electronic Hall of Fame 2 boxed"), T(6, 494, "TC Electronic Hall of Fame 2 X4 8 presets"), T(7, 45, "TC Electronic Hall of Fame 2 reverb cheap")];
   const client = new EbayClient({ clientId: "a", clientSecret: "b", fetch: fakeFetch({ items }), sleep: async () => {} });
   const watchlist = [{ id: "old", query: "TC Electronic Hall of Fame 2", title: "TC Electronic Hall of Fame 2 X4", landed: 494, status: "active" }];
-  const cfg = { ...DEFAULT_CONFIG, queries: [{ q: "TC Electronic Hall of Fame 2", exclude: ["x4"] }], minComps: 5, cheapBandLimit: 0 };
+  const cfg = { ...DEFAULT_CONFIG, ...plain, queries: [{ q: "TC Electronic Hall of Fame 2", exclude: ["x4"] }], minComps: 5, cheapBandLimit: 0 };
   const { results } = await runScan(client, cfg, { log: () => {}, watchlist });
   assert.equal(results.length, 1); assert.equal(results[0].estResale, 100, "median without the X4");
   assert.ok(!watchlist.some((e) => e.id === "old"), "the tracked X4 was pruned");
@@ -156,9 +159,9 @@ test("median ignores overseas export asks when enough nearer comps exist", () =>
   const L = (i, price, loc) => { const s = summarise(makeItem(i, { price, title: "TC Electronic Hall of Fame 2 #" + i })); s.location = loc; return s; };
   const listings = [L(1, 100, "IE"), L(2, 114, "GB"), L(3, 114, "US"), L(4, 157, "US"), L(5, 167, "US"),
     L(6, 181, "JP"), L(7, 205, "JP"), L(8, 222, "JP"), L(9, 246, "JP"), L(10, 314, "JP"), L(11, 90, "IE")];
-  const out = findCandidates("TC Electronic Hall of Fame 2", listings, { ...DEFAULT_CONFIG, discount: 0.3, minMarginEur: 15 });
+  const out = findCandidates("TC Electronic Hall of Fame 2", listings, { ...DEFAULT_CONFIG, ...plain, minProfitEur: 30 });
   assert.equal(out.length, 0, "€90–€100 is fair against the €114 near median, not a deal against the €181 all-comps median");
   const deal = listings.concat([L(12, 60, "IE")]);
-  const out2 = findCandidates("TC Electronic Hall of Fame 2", deal, { ...DEFAULT_CONFIG, discount: 0.3, minMarginEur: 15 });
+  const out2 = findCandidates("TC Electronic Hall of Fame 2", deal, { ...DEFAULT_CONFIG, ...plain, minProfitEur: 30 });
   assert.equal(out2.length, 1); assert.equal(out2[0].estResale, 114); assert.match(out2[0].reasoning, /5 overseas asks excluded/);
 });

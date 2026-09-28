@@ -59,7 +59,10 @@ export function legacyIdFromUrl(url) {
 
 /** Normalise an itemSummary into the flat shape the scanner works with. */
 export function summarise(it) {
-  const price = it.price ? Number(it.price.value) : NaN;
+  // Auctions carry the current bid in currentBidPrice (price may be absent or a Buy It Now alongside the bids).
+  const auction = (it.buyingOptions || []).includes("AUCTION");
+  const bid = it.currentBidPrice ? Number(it.currentBidPrice.value) : NaN;
+  const price = auction && isFinite(bid) ? bid : it.price ? Number(it.price.value) : bid;
   const ship = it.shippingOptions && it.shippingOptions[0] && it.shippingOptions[0].shippingCost
     ? Number(it.shippingOptions[0].shippingCost.value) : null;
   return {
@@ -78,6 +81,7 @@ export function summarise(it) {
     bidCount: it.bidCount || 0,
     endsAt: it.itemEndDate || "",
     location: it.itemLocation ? (it.itemLocation.country || "") : "",
+    postcode: it.itemLocation ? (it.itemLocation.postalCode || "") : "",
     seller: it.seller ? { name: it.seller.username || "", feedbackPct: it.seller.feedbackPercentage, feedbackScore: it.seller.feedbackScore } : null,
   };
 }

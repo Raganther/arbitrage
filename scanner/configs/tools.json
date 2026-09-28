@@ -10,7 +10,6 @@
     "Festool track saw",
     "Hilti drill"
   ],
-  "minMarginEur": 15,
   "assumedPostage": {
     "home": 10,
     "eu": 20,

@@ -39,7 +39,8 @@ test("computeMarket: proxy until 3 sales, then tracked; sell-through and targetB
     entry({ id: "f", status: "sold-likely", closedPrice: 100 }), entry({ id: "g", status: "expired" }));
   m = computeMarket(wl, T0 + 10 * DAY);
   const r = m["Boss DS-1"];
-  assert.equal(r.basis, "sold"); assert.equal(r.estSold, 90); assert.equal(r.targetBuy, 45);
+  assert.equal(r.basis, "sold"); assert.equal(r.inferredSold, 90);
+  assert.equal(r.estSold, 60, "inferred €90 is capped at 0.6 × the €100 median asking until verified"); assert.equal(r.targetBuy, 30);
   assert.equal(r.sellThrough, 75, "3 sold of 4 closed"); assert.equal(r.daysTracked, 10);
 });
 
@@ -56,12 +57,13 @@ test("rememberComps: de-duplicates, caps per query, refreshes lastSeen", () => {
 test("findCandidates uses the market's targetBuy and tracked estSold when present", () => {
   const L = (i, price) => summarise(makeItem(i, { price, title: "Boss DS-1 pedal #" + i }));
   const listings = [L(1, 100), L(2, 100), L(3, 100), L(4, 100), L(5, 100), L(6, 75)];
-  const cfg = { ...DEFAULT_CONFIG, discount: 0.3, minMarginEur: 15 };
-  assert.equal(findCandidates("Boss DS-1", listings, cfg).length, 0, "€75 is only 25% under, not a candidate by the default rule");
+  const cfg = { ...DEFAULT_CONFIG, askToSold: 1, sellFeePct: 0, sellFixedFee: 0, sellPostage: 0, packaging: 0, minProfitEur: 30, minRoi: 0, importVat: 0 };
+  assert.equal(findCandidates("Boss DS-1", listings, cfg).length, 0, "€75 against €100 is only €25 profit");
   const market = { "Boss DS-1": { targetBuy: 80, estSold: 160, sellThrough: 70 } };
   const out = findCandidates("Boss DS-1", listings, cfg, 1, [], market);
   assert.equal(out.length, 1); assert.equal(out[0].estResale, 160); assert.equal(out[0].estBasis, "tracked-sales");
-  assert.match(out[0].reasoning, /Tracked sales say ~€160 \(70% sell-through\); target buy ≤€80/);
+  assert.match(out[0].reasoning, /Worth ~€160 \(tracked sales, capped\).*Ceiling €80\b/);
+  assert.equal(out[0].targetBuy, 80, "the stricter of the profit ceiling (€130) and the market's targetBuy (€80)");
 });
 
 test("verified sold prices outrank inferred ones and set targetBuy", () => {
@@ -75,5 +77,5 @@ test("verified sold prices outrank inferred ones and set targetBuy", () => {
   // One or two verified prices blend with inferred sales rather than replacing them.
   const wl2 = wl.concat([entry({ id: "d", status: "sold-likely", closedPrice: 100 }), entry({ id: "e", status: "sold-likely", closedPrice: 100 }), entry({ id: "f", status: "sold-likely", closedPrice: 100 })]);
   const blend = computeMarket(wl2, T0, {}, { "Boss DS-1": [{ price: 60 }] })["Boss DS-1"];
-  assert.equal(blend.basis, "sold"); assert.equal(blend.estSold, 100, "median of [60,100,100,100]");
+  assert.equal(blend.basis, "sold"); assert.equal(blend.estSold, 60, "median of [60,100,100,100] = €100, capped at 0.6 × €100 asking");
 });

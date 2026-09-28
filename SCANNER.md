@@ -75,19 +75,40 @@ least three comps come from elsewhere the median uses only those. A search can
 also carry its own exclusions (`{"q": "TC Electronic Hall of Fame 2", "exclude":
 ["x4", "mini"]}`) so bigger/smaller variants don't inflate it, and a number in the
 query must end where it ends ("Hall of Fame 2" never matches "…2010"). Then it
-searches the **cheap band** — 25% to 50% of that median, cheapest first — and
-flags what's there (default: ≥50% under the median asking and ≥€15 gap).
+searches the **cheap band** — 25% to 50% of that median, cheapest first.
 
-**Why 50%, not 30%.** Verified sold prices entered on 11 Sep 2026 (Shure SM58,
+**What gets flagged is decided by net profit, not by "% under asking".** Each
+listing is costed all-in — landed price plus **23% Irish import VAT** when it
+ships from outside the EU (GB since Brexit; Northern Ireland `BT` postcodes
+excepted) — and resold at the search's **value**: verified sold prices when
+you've entered them, else tracked sales capped at 60% of median asking, else
+0.6 × median asking. After selling fees (13% + €0.35), postage (the config's
+`assumedPostage.home` unless `sellPostage` is set) and €1 packaging, it must
+clear **both** `minProfitEur` (€15) and `minRoi` (30%), and never exceed the
+market's `targetBuy`. Candidates are ranked by net profit and carry `netProfit`,
+`roi` and `targetBuy` (the all-in ceiling). `price` is the all-in cost, so
+Scout's own maths starts from what you'd actually pay.
+
+**Auctions and misspellings.** Two more places eBay actually misprices. Per
+query it also fetches **auctions ending within 24 h** (`auctionHours`), valued
+against the fixed-price comps (never part of them); an auction candidate
+carries `maxBid` — the highest item bid that still clears the profit bar. And a
+config's `typos` map (`{"Vaillant": ["Vailant", "Valliant"]}`) turns each
+matching query into extra searches with eBay's auto-correct **off**; hits are
+matched against the misspelling and valued against the real product.
+
+**Why not "X% under asking".** Verified sold prices entered on 11 Sep 2026 (Shure SM58,
 Scarlett 2i2 by generation, Ideal Logic fan 175569, Hall of Fame 2) showed used
 items *sell* for roughly 50–65% of the median *asking* price on ebay.ie —
 asking medians are inflated by trade sellers, export sellers and optimists. So
 "30% under asking" is about the sold price, i.e. no margin. The tracker's proxy
 now assumes sold ≈ 60% of median asking until real sales say otherwise. Each flag is a candidate —
 an underpriced listing relative to its peers — which you then verify against real
-**sold** comps in Scout. `estResale` is the median asking price, a proxy, never
-a guarantee. Two API calls per query, so a seven-query scan every hour is ~340
-calls/day against the 5,000 budget.
+**sold** comps in Scout. `estResale` is an estimate, never a guarantee. The
+27 Sep 2026 Discover feed showed why the old rule wasn't enough: a GB Vaillant
+fan "59% under" a €79 median cost €38 with VAT, was worth ~€47, and would have
+lost ~€6 after fees and postage — all 11 candidates that day fail the profit
+bar. Three API calls per query plus one per typo variant.
 
 The first live runs shaped these rules: cheapest-first sampling alone returned
 power adapters, carry cases and 1982 magazine adverts as "deals". With the gate
@@ -107,8 +128,8 @@ or withdrawn — not counted). From these, per search, `data/market.json` holds:
 | Field | Meaning |
 |---|---|
 | `sellThrough` | sold ÷ (sold + expired), once 3+ have closed — Demand Radar's key input |
-| `estSold` | median asking of the ones that sold — the real value (null until 3 sales; then the scanner's `estResale` switches to it) |
-| `targetBuy` | half of `estSold` (or of 85% of median asking while it's still a proxy) — the most to pay all-in |
+| `estSold` | median asking of the ones that sold, **capped at 60% of median asking** until verified (a vanished listing may have been withdrawn or sold on a lower offer) — null until 3 sales; then the scanner values from it. `inferredSold` keeps the uncapped figure. |
+| `targetBuy` | half of `estSold` (or of 60% of median asking while it's still a proxy) — a hard cap on the scanner's all-in ceiling |
 
 **Or tell it directly.** Sold prices are free to read on ebay.ie (search the
 model, tick *Sold items*). `npm run sold -- "Boss DS-1" 65 70 62` records what
@@ -116,9 +137,9 @@ buyers actually paid; with 3+ entered, `estSold` comes from those (marked ✓ in
 the market table) and the tracker's inferences only fill in for searches you
 haven't looked up. That's the fastest way to make the numbers real on day one.
 
-The scanner reads `market.json` on its next run: anything at or under
-`targetBuy` is flagged, and each candidate's reasoning quotes the tracked
-numbers. The longer it runs, the less it leans on asking prices. Budget: ~30
+The scanner reads `market.json` on its next run: its values feed the profit
+maths above, `targetBuy` caps the ceiling, and each candidate's reasoning
+quotes the numbers. The longer it runs, the less it leans on asking prices. Budget: ~30
 calls per search per track run, so 7 searches ≈ 210 calls/day plus 14 for the
 scan, well inside 5,000. `npm run daily` does both.
 

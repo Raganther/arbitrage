@@ -35,6 +35,7 @@ export function toDoc(c, now = Date.now()) {
     soldQuery: c.soldQuery || c.title, category: c.category || "other", source: c.source || "eBay",
     url: c.url || "", reasoning: c.reasoning || "", foundAt: Number(c.foundAt) || now, status: "new",
     ...(c.image ? { image: c.image } : {}), ...(c.targetBuy ? { targetBuy: c.targetBuy } : {}), ...(c.estBasis ? { estBasis: c.estBasis } : {}), ...(c.lot ? { lot: true } : {}),
+    ...(c.netProfit != null ? { netProfit: c.netProfit, roi: c.roi } : {}), ...(c.auction ? { auction: true, maxBid: c.maxBid, endsAt: c.endsAt || "" } : {}), ...(c.typo ? { typo: c.typo } : {}),
   } };
 }
 
@@ -62,7 +63,7 @@ export function planWrites(results, existing = {}, { now = Date.now(), maxAgeDay
     if (ex) {
       // Already there — keep the user's status, but refresh the numbers if the estimate moved.
       const patch = {};
-      for (const k of ["price", "estResale", "reasoning", "targetBuy", "estBasis"]) if (doc[k] !== undefined && doc[k] !== ex[k]) patch[k] = doc[k];
+      for (const k of ["price", "estResale", "reasoning", "targetBuy", "estBasis", "netProfit", "roi", "maxBid"]) if (doc[k] !== undefined && doc[k] !== ex[k]) patch[k] = doc[k];
       if (Object.keys(patch).length) updates.push({ op: "update", doc_id: id, data: patch });
       continue;
     }

@@ -8,7 +8,8 @@
  * that runs to its end date and stops didn't sell. From those it computes, per
  * search:
  *   - sell-through   sold ÷ (sold + expired)           → Demand Radar's key input
- *   - estSold        median asking price of the ones that sold  → the real value
+ *   - estSold        median asking price of the ones that sold, capped at 60% of the
+ *                    median asking until verified sold prices exist → the real value
  *   - targetBuy      half of estSold (fees, postage, mistakes)  → your ceiling
  * and writes data/market.json, which the scanner then uses to flag deals.
  *
@@ -65,15 +66,20 @@ export function computeMarket(watchlist, now = Date.now(), cfg = {}, verified = 
     const closed = sold.length + expired.length;
     const medianAsk = active.length ? Math.round(median(active.map((e) => e.landed))) : (es.length ? Math.round(median(es.map((e) => e.landed))) : null);
     const inferred = sold.length >= minClosed ? Math.round(median(sold.map((e) => e.closedPrice))) : null;
-    const estSold = ver.length >= minClosed ? Math.round(median(ver)) : ver.length && inferred != null ? Math.round(median(ver.concat(sold.map((e) => e.closedPrice)))) : inferred;
-    const basis = ver.length >= minClosed ? "verified" : estSold != null ? "sold" : "proxy";
+    const blended = ver.length >= minClosed ? Math.round(median(ver)) : ver.length && inferred != null ? Math.round(median(ver.concat(sold.map((e) => e.closedPrice)))) : inferred;
+    const basis = ver.length >= minClosed ? "verified" : blended != null ? "sold" : "proxy";
+    // A listing that vanished early may have been withdrawn, relisted or sold on a lower Best Offer, and its asking
+    // price is not what it went for. Until a human verifies prices, an inferred estimate never exceeds the
+    // calibrated sold ≈ askToSold × median asking (Sep 2026: inferred Hall of Fame 2 said €240 against a €198 ask).
+    const cap = medianAsk != null ? Math.round(medianAsk * askToSold) : null;
+    const estSold = basis === "sold" && cap != null ? Math.min(blended, cap) : blended;
     const value = estSold != null ? estSold : (medianAsk != null ? Math.round(medianAsk * askToSold) : null);
     const oldest = Math.min(...es.map((e) => e.firstSeen || now));
     out[q] = {
       query: q, tracked: es.length, active: active.length, soldLikely: sold.length, expired: expired.length, removed: removed.length,
       daysTracked: Math.round((now - oldest) / DAY),
       sellThrough: closed >= minClosed ? Math.round((sold.length / closed) * 100) : null,
-      medianAsk, estSold, basis, verifiedCount: ver.length,
+      medianAsk, estSold, basis, verifiedCount: ver.length, inferredSold: inferred,
       targetBuy: value != null ? Math.round(value * buyFraction) : null,
       updatedAt: now,
     };
@@ -90,7 +96,7 @@ export function printMarket(market) {
       String(r.expired).padStart(9) + String(r.removed).padStart(9) + f(r.sellThrough, "%").padStart(11) + f(r.medianAsk, "€").padStart(12) +
       (r.estSold == null ? "  proxy" : f(r.estSold, "€") + (r.basis === "verified" ? "✓" : " ")).padStart(10) + f(r.targetBuy, "€").padStart(12));
   }
-  console.log("\nest-sold: ✓ = from sold prices you entered (node sold.mjs); otherwise median asking of tracked listings that ended early (sold).\n'proxy' = not enough sales yet; target-buy then assumes sold ≈ 60% of median asking (calibrated on verified models).\ntarget-buy = half the estimated sold price: the most you pay, all-in, to keep ~30%+ margin after fees and postage.");
+  console.log("\nest-sold: ✓ = from sold prices you entered (node sold.mjs); otherwise median asking of tracked listings that ended early (sold), capped at 60% of median asking.\n'proxy' = not enough sales yet; target-buy then assumes sold ≈ 60% of median asking (calibrated on verified models).\ntarget-buy = half the estimated sold price: the most you pay, all-in, to keep ~30%+ margin after fees and postage.");
 }
 
 async function main() {
